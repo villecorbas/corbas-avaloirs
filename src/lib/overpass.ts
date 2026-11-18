@@ -50,7 +50,15 @@ async function runOverpass(query: string, timeoutMs = 25000): Promise<{ elements
         signal: controller.signal,
       });
       clearTimeout(timer);
-      if (res.ok) return await res.json();
+      if (res.ok) {
+        const json = await res.json();
+        // Overpass répond 200 avec un résultat tronqué quand la requête dépasse son temps ou sa mémoire.
+        if (typeof json.remark === 'string' && /runtime error|timed out|out of memory/i.test(json.remark)) {
+          lastError = new Error('overpass_partial');
+          continue;
+        }
+        return json;
+      }
       lastError = new Error(`overpass_${res.status}`);
     } catch (e) {
       clearTimeout(timer);

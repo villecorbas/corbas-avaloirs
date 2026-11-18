@@ -134,6 +134,15 @@ L'écran Carte charge tous les avaloirs de la zone affichée (cercle plein : ave
 
 « Peut-il retenir de l'eau stagnante ? » — *Oui, visible* / *Possible* / *Non* — doit être renseignée pour chaque relevé : c'est l'information clé pour la lutte anti-vectorielle. Elle est publiée avec la photo sur Panoramax (`avaloirs|standing_water=yes|possible|no`) et figure dans les exports.
 
+## Sécurité et fiabilité
+
+- **Content-Security-Policy** injectée à la compilation : scripts limités à l'application, aucun objet ni cadre externe, connexions en HTTPS uniquement. Le jeton OAuth OpenStreetMap (permissions `read_prefs` et `write_api`, sans mot de passe) est conservé dans le navigateur de l'utilisateur et **révoqué côté OSM à la déconnexion**.
+- **Entrées non fiables** (tags OSM, paramètre d'invitation `?ref=`, réponses des serveurs) : identifiants de photo validés (UUID), pseudonymes nettoyés des caractères de direction/contrôle, serveurs configurables acceptés en HTTPS seulement, export CSV protégé contre l'injection de formules.
+- **Pas de doublons sur la carte publique** : un seul onglet publie à la fois (verrou Web Locks), et après un envoi interrompu sans réponse, l'appli recherche dans OSM l'objet éventuellement déjà créé (via l'identifiant de sa photo) avant de réessayer.
+- **Réessais** : réseau instable, serveur surchargé, limitation de débit ou session expirée ne consomment pas les tentatives automatiques.
+- **Photos importées de la galerie** : conservent leur propre date de prise de vue ; la position GPS actuelle ne leur est attribuée que si elles viennent d'être prises.
+- Limite connue : les points et badges du téléphone sont calculés localement (sans serveur central) ; ils motivent mais ne sont pas infalsifiables. Le classement public, lui, repose sur les données d'OSM.
+
 ## 5. Mise en service
 
 ### 5.1 Compiler

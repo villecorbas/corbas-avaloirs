@@ -92,15 +92,22 @@ export function useLocation(active = true): State {
 /* ---------------------------- Boussole ---------------------------------- */
 
 let compassOn = false;
+let lastHeadingAt = 0;
 
 function onOrientation(e: DeviceOrientationEvent & { webkitCompassHeading?: number }) {
   let heading: number | null = null;
   if (typeof e.webkitCompassHeading === 'number') heading = e.webkitCompassHeading; // iOS
   else if (e.absolute && typeof e.alpha === 'number') heading = (360 - e.alpha) % 360; // Android
-  if (heading !== null) {
-    const angle = (screen.orientation?.angle ?? 0) as number;
-    set({ heading: (heading + angle + 360) % 360 });
-  }
+  if (heading === null) return;
+  const angle = (screen.orientation?.angle ?? 0) as number;
+  const h = (heading + angle + 360) % 360;
+  // Les capteurs émettent à ~60 Hz : on ne notifie les écrans qu'au-delà de 3° et 5 fois par seconde.
+  const now = performance.now();
+  const prev = state.heading;
+  const delta = prev === null ? 360 : Math.min(Math.abs(h - prev), 360 - Math.abs(h - prev));
+  if (delta < 3 || now - lastHeadingAt < 200) return;
+  lastHeadingAt = now;
+  set({ heading: h });
 }
 
 /** Doit être appelé lors d'un geste utilisateur (exigence iOS). */

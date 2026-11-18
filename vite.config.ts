@@ -35,11 +35,45 @@ function serviceWorker(): Plugin {
   };
 }
 
+/**
+ * Content-Security-Policy injectée à la compilation (pas en développement, où Vite
+ * a besoin de scripts en ligne). Réduit fortement l'impact d'une éventuelle faille XSS :
+ * le jeton OAuth OpenStreetMap est stocké dans le navigateur.
+ * connect-src autorise https: car les serveurs (Panoramax, Overpass) sont configurables.
+ */
+function contentSecurityPolicy(): Plugin {
+  const csp = [
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline'", // Leaflet et les icônes de carte utilisent des styles en ligne
+    "img-src 'self' data: blob: https:",
+    "connect-src 'self' https:",
+    "font-src 'self'",
+    "worker-src 'self'",
+    "manifest-src 'self'",
+    "media-src 'self' blob:",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-src 'none'",
+  ].join('; ');
+  return {
+    name: 'avaloirs-csp',
+    transformIndexHtml: {
+      order: 'post',
+      handler(html, ctx) {
+        if (!ctx.bundle) return html;
+        return html.replace('<head>', `<head>\n    <meta http-equiv="Content-Security-Policy" content="${csp}" />`);
+      },
+    },
+  };
+}
+
 export default defineConfig({
   // Chemins relatifs : l'appli peut être hébergée dans un sous-dossier
   // (ex. https://ville.fr/avaloirs/ ou GitHub Pages).
   base: './',
-  plugins: [react(), serviceWorker()],
+  plugins: [react(), serviceWorker(), contentSecurityPolicy()],
   build: {
     target: ['es2020', 'safari15'],
     sourcemap: false,

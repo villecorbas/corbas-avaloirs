@@ -11,13 +11,26 @@ export function inviteUrl(pseudo?: string): string {
   return url.toString();
 }
 
+/**
+ * Le pseudonyme vient d'un lien : valeur non fiable, affichée à l'écran. On retire les
+ * caractères de contrôle et de direction (usurpation visuelle) et on limite la longueur.
+ */
+export function cleanPseudo(raw: string | null | undefined): string {
+  if (!raw) return '';
+  return raw
+    .normalize('NFKC')
+    .replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff]/g, '')
+    .trim()
+    .slice(0, 40);
+}
+
 /** Au démarrage : mémorise « invité par … » et nettoie l'URL. */
 export function captureReferral() {
   try {
     const url = new URL(window.location.href);
-    const ref = url.searchParams.get('ref');
+    const ref = cleanPseudo(url.searchParams.get('ref'));
     if (!ref) return;
-    localStorage.setItem(REF_KEY, ref.slice(0, 60));
+    localStorage.setItem(REF_KEY, ref);
     url.searchParams.delete('ref');
     window.history.replaceState(null, '', url.pathname + url.search + url.hash);
   } catch {
@@ -27,7 +40,7 @@ export function captureReferral() {
 
 export function invitedBy(): string | null {
   try {
-    return localStorage.getItem(REF_KEY);
+    return cleanPseudo(localStorage.getItem(REF_KEY)) || null;
   } catch {
     return null;
   }

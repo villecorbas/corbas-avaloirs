@@ -76,7 +76,7 @@ export function LocateStep({
   const startMeasure = () => {
     haptic();
     // Le GPS n'émet parfois pas de nouvelle mesure quand on est immobile : on part de la dernière connue.
-    samples.current = loc.fix && Date.now() - loc.fix.t < 60_000 ? [loc.fix] : [];
+    samples.current = loc.fix && Date.now() - loc.fix.t < 15_000 ? [loc.fix] : [];
     setCount(samples.current.length);
     setPhase('measuring');
   };

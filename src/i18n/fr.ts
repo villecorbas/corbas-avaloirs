@@ -373,6 +373,7 @@ const fr: Dict = {
 
   errors: {
     generic: 'Erreur : {error}',
+    saveFailed: 'Impossible d’enregistrer le relevé (espace de stockage plein ou navigation privée ?). Réessayez.',
     network: 'Réseau indisponible. Nouvel essai automatique plus tard.',
     offline: 'Vous êtes hors ligne. Les relevés seront envoyés au retour du réseau.',
     osm_rate_limited: 'OpenStreetMap limite le nombre de modifications des nouveaux comptes. Nouvel essai automatique dans quelques minutes.',

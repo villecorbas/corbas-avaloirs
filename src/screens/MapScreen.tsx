@@ -14,12 +14,12 @@ import { needsSync } from '../lib/gamification';
 import { typeFromTags } from '../lib/taxonomy';
 import { osmElementUrl } from '../lib/osm';
 import { recordCenter } from '../lib/export';
-import { panoramaxReady, pictureThumbUrl, pictureViewerUrl } from '../lib/panoramax';
+import { firstPictureId, panoramaxReady, pictureThumbUrl, pictureViewerUrl } from '../lib/panoramax';
 import { RecordDetail } from './RecordDetail';
 import { LockedBanner } from '../components/LockedReminder';
 
 const DEFAULT_CENTER: LatLon = { lat: 46.6, lon: 2.4 };
-const MIN_ZOOM = 15.5;
+const MIN_ZOOM = 16;
 const COVERAGE_KEY = 'avaloirs.coverage';
 
 export function MapScreen({ onAdd, onOpenProfile, onOpenAccounts }: { onAdd: () => void; onOpenProfile: () => void; onOpenAccounts: () => void }) {
@@ -65,6 +65,8 @@ export function MapScreen({ onAdd, onOpenProfile, onOpenAccounts }: { onAdd: () 
 
   // Charge avaloirs et rues de la zone affichée (avec une marge), quand on a assez zoomé.
   const fetched = useRef<[number, number, number, number] | null>(null);
+  const requestSeq = useRef(0);
+  const retryAfter = useRef(0);
   const loadArea = useCallback((c: LatLon, z: number) => {
     setZoom(z);
     const map = mapRef.current?.map();
@@ -72,18 +74,24 @@ export function MapScreen({ onAdd, onOpenProfile, onOpenAccounts }: { onAdd: () 
     const b = map.getBounds();
     const f = fetched.current;
     if (f && b.getSouth() >= f[0] && b.getWest() >= f[1] && b.getNorth() <= f[2] && b.getEast() <= f[3]) return;
-    const pad = b.pad(0.6);
+    // Après un échec, on attend avant de réinterroger : sans cela, chaque déplacement de la carte
+    // relancerait une requête sur un serveur Overpass déjà en difficulté.
+    if (Date.now() < retryAfter.current) return;
+    const pad = b.pad(0.4);
     const bbox: [number, number, number, number] = [pad.getSouth(), pad.getWest(), pad.getNorth(), pad.getEast()];
     fetched.current = bbox;
+    const seq = ++requestSeq.current;
     setLoadingArea(true);
     fetchArea(bbox)
-      .then(setArea)
+      .then((a) => seq === requestSeq.current && setArea(a)) // une réponse tardive n'écrase pas une plus récente
       .catch(() => {
+        if (seq !== requestSeq.current) return;
         fetched.current = null;
+        retryAfter.current = Date.now() + 20_000;
         // Repli : avaloirs autour du centre uniquement.
-        void fetchNearbyDrains(c, 600).then(setNearby).catch(() => undefined);
+        void fetchNearbyDrains(c, 600).then((d) => seq === requestSeq.current && setNearby(d)).catch(() => undefined);
       })
-      .finally(() => setLoadingArea(false));
+      .finally(() => seq === requestSeq.current && setLoadingArea(false));
   }, []);
 
   const drains = useMemo(() => {
@@ -282,7 +290,7 @@ export function MapScreen({ onAdd, onOpenProfile, onOpenAccounts }: { onAdd: () 
 }
 
 function OsmDrainDetail({ drain, onAdd }: { drain: OsmDrain; onAdd: () => void }) {
-  const photo = drain.tags.panoramax;
+  const photo = firstPictureId(drain.tags);
   return (
     <div className="stack">
       {photo ? (

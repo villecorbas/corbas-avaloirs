@@ -60,7 +60,11 @@ export async function processFile(file: Blob): Promise<ProcessedPhoto> {
     w = img.naturalWidth;
     h = img.naturalHeight;
   }
-  return finish(drawScaled(source, w, h, MAX_SIDE));
+  const canvas = drawScaled(source, w, h, MAX_SIDE);
+  // Libère la mémoire de l'image décodée (plusieurs dizaines de Mo pour une photo de 12 Mpx).
+  if ('close' in source && typeof source.close === 'function') source.close();
+  else if (source instanceof HTMLImageElement) URL.revokeObjectURL(source.src);
+  return finish(canvas);
 }
 
 function loadImage(file: Blob): Promise<HTMLImageElement> {

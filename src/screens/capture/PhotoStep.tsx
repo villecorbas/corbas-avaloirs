@@ -69,8 +69,11 @@ export function PhotoStep({ initial, onDone }: { initial?: PhotoResult; onDone: 
     return { lat: fix.lat, lon: fix.lon, acc: fix.acc, heading: heading ?? undefined };
   };
 
-  const finish = (photo: ProcessedPhoto) => {
-    setPreview({ photo, url: URL.createObjectURL(photo.thumb), takenAt: Date.now(), photoPosition: position() });
+  const finish = (photo: ProcessedPhoto, takenAt = Date.now()) => {
+    // Une photo importée de la galerie peut dater d'ailleurs ou d'hier : on ne lui attribue
+    // la position GPS actuelle que si elle vient d'être prise.
+    const fresh = Math.abs(Date.now() - takenAt) < 2 * 60_000;
+    setPreview({ photo, url: URL.createObjectURL(photo.thumb), takenAt, photoPosition: fresh ? position() : undefined });
   };
 
   const shoot = async () => {
@@ -92,7 +95,7 @@ export function PhotoStep({ initial, onDone }: { initial?: PhotoResult; onDone: 
     if (!file) return;
     setBusy(true);
     try {
-      finish(await processFile(file));
+      finish(await processFile(file), Math.min(file.lastModified || Date.now(), Date.now()));
     } finally {
       setBusy(false);
     }

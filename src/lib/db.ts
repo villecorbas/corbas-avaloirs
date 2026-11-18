@@ -31,6 +31,8 @@ export interface DrainRecord {
       osmId?: number;
       changesetId?: number;
       photoTagged?: boolean;
+      /** Envoi interrompu sans réponse du serveur : l'objet a peut-être été créé (vérifié avant de réessayer). */
+      uncertain?: boolean;
       error?: string;
       attempts: number;
     };

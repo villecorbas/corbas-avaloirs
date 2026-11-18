@@ -2,6 +2,7 @@ import type { DrainRecord } from './db';
 import type { OsmDrain } from './overpass';
 import { osmTags } from './taxonomy';
 import { distance, midpoint } from './geo';
+import { firstPictureId } from './panoramax';
 
 /** Point d'intervention : centre du tracé pour un caniveau, sinon la position relevée. */
 export function recordCenter(r: DrainRecord) {
@@ -50,7 +51,7 @@ export function osmDrainsToGeoJSON(drains: OsmDrain[]) {
     type: 'FeatureCollection',
     name: 'avaloirs_osm',
     features: drains.map((d) => {
-      const photo = d.tags.panoramax;
+      const photo = firstPictureId(d.tags);
       return {
         type: 'Feature',
         geometry: { type: 'Point', coordinates: [round(d.lon), round(d.lat)] },
@@ -83,7 +84,9 @@ const CSV_COLUMNS = [
 
 export function recordsToCSV(records: DrainRecord[]): string {
   const esc = (v: unknown) => {
-    const s = v === undefined || v === null ? '' : String(v);
+    let s = v === undefined || v === null ? '' : String(v);
+    // Injection de formules (Excel/LibreOffice) : on neutralise les textes qui commencent par = + - @.
+    if (/^[=+\-@\t\r]/.test(s) && !/^-?\d+(\.\d+)?$/.test(s)) s = `'${s}`;
     return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   const rows = records.map((r) =>

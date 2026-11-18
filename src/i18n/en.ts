@@ -373,6 +373,7 @@ const en: Dict = {
 
   errors: {
     generic: 'Error: {error}',
+    saveFailed: 'Could not save the survey (storage full or private browsing?). Please try again.',
     network: 'Network unavailable. Will retry automatically later.',
     offline: 'You are offline. Surveys will upload when the network is back.',
     osm_rate_limited: 'OpenStreetMap limits the number of edits from new accounts. Will retry automatically in a few minutes.',

@@ -8,6 +8,7 @@ import {
   changesetTags,
   closeChangeset,
   createChangeset,
+  findPublishedByPicture,
   getElement,
   refKey,
   getOsmAuth,
@@ -66,6 +67,25 @@ function retryable(r: DrainRecord, step: 'panoramax' | 'osm', manual: boolean) {
   const s = r.sync[step];
   if (s.status === 'done' || s.status === 'skipped') return false;
   return manual || s.attempts < MAX_AUTO_ATTEMPTS;
+}
+
+/**
+ * Un échec ne compte comme « tentative » que s'il vient de la donnée (refus du serveur).
+ * Réseau instable, surcharge (5xx), limitation de débit ou session expirée ne doivent
+ * pas épuiser les réessais automatiques d'un contributeur sur le terrain.
+ */
+export function countsAsAttempt(e: unknown): boolean {
+  if (e instanceof TypeError) return false;
+  if (e instanceof OsmError || e instanceof PanoramaxError) {
+    const s = e.status;
+    return !(s === 0 || s === 401 || s === 403 || s === 408 || s === 429 || s >= 500);
+  }
+  return true;
+}
+
+/** Le serveur a-t-il pu appliquer la requête malgré l'échec côté téléphone ? */
+export function outcomeUncertain(e: unknown): boolean {
+  return e instanceof TypeError || (e instanceof OsmError && (e.status === 408 || e.status >= 500));
 }
 
 function describe(e: unknown): string {
@@ -138,7 +158,7 @@ async function syncPanoramax(records: DrainRecord[], manual: boolean) {
       await updateRecord(r.id, (x) => {
         x.sync.panoramax.status = permanent ? 'skipped' : 'error';
         x.sync.panoramax.error = describe(e);
-        x.sync.panoramax.attempts++;
+        if (countsAsAttempt(e)) x.sync.panoramax.attempts++;
       });
       if (e instanceof PanoramaxError && (e.status === 401 || e.status === 403)) {
         set({ lastError: 'panoramax_auth' });
@@ -219,6 +239,19 @@ async function planOsm(records: DrainRecord[], manual: boolean): Promise<Planned
       if (r.sync.osm.status !== 'done') {
         if (!retryable(r, 'osm', manual) || waitPhoto) continue;
         const create = createOpFor(r, photoId);
+        // Envoi précédent interrompu sans réponse : l'objet existe peut-être déjà. On le cherche
+        // (via l'identifiant de photo qu'il porte) avant d'en créer un second.
+        if (create && photoId && r.sync.osm.uncertain && !(r.mode === 'enrich' && r.osmTarget)) {
+          const at = create.kind === 'createWay' ? midpoint(create.points[0], create.points[1]) : create.kind === 'create' ? create : r.position;
+          const found = await findPublishedByPicture(at, photoId);
+          if (found) {
+            await updateRecord(r.id, (x) => {
+              x.sync.osm = { ...x.sync.osm, status: 'done', osmType: found.type, osmId: found.id, photoTagged: true, uncertain: false, error: undefined };
+              x.bonusAwarded = true;
+            });
+            continue;
+          }
+        }
         if (r.mode === 'enrich' && r.osmTarget) {
           try {
             await addModify(r.osmTarget.type ?? 'node', r.osmTarget.id, r, true, photoId);
@@ -238,7 +271,7 @@ async function planOsm(records: DrainRecord[], manual: boolean): Promise<Planned
       await updateRecord(r.id, (x) => {
         x.sync.osm.status = 'error';
         x.sync.osm.error = describe(e);
-        x.sync.osm.attempts++;
+        if (countsAsAttempt(e)) x.sync.osm.attempts++;
       });
     }
   }
@@ -268,6 +301,7 @@ async function syncOsm(manual: boolean) {
       // Conflit de version (quelqu'un a modifié le nœud) : on recharge et on réessaie une fois.
       if (e instanceof OsmError && e.status === 409) {
         planned = await planOsm((await allRecords()).filter(needsSync).reverse(), manual);
+        if (!planned.length) return; // plus rien à envoyer : le conflit venait d'un objet déjà à jour
         planned.forEach((p, i) => (p.op.ref = String(i)));
         built = buildOsmChange(
           planned.map((p) => p.op),
@@ -290,6 +324,7 @@ async function syncOsm(manual: boolean) {
             osmId: entry.newId,
             changesetId: csId,
             photoTagged: x.sync.osm.photoTagged || rec.photoTagged,
+            uncertain: false,
             error: undefined,
           };
           x.bonusAwarded = true;
@@ -304,7 +339,8 @@ async function syncOsm(manual: boolean) {
           if (x.sync.osm.status === 'done') return;
           x.sync.osm.status = 'error';
           x.sync.osm.error = describe(e);
-          x.sync.osm.attempts++;
+          if (countsAsAttempt(e)) x.sync.osm.attempts++;
+          if (outcomeUncertain(e)) x.sync.osm.uncertain = true;
         });
       }
     }
@@ -317,6 +353,17 @@ async function syncOsm(manual: boolean) {
 /* ----------------------------- Orchestration --------------------------- */
 
 export async function syncNow(opts: { manual?: boolean } = {}) {
+  if (state.running) return;
+  // L'application peut être ouverte dans deux fenêtres (navigateur + écran d'accueil) : sans
+  // verrou, elles publieraient chacune le même relevé. Web Locks garantit un seul envoi à la fois.
+  if (typeof navigator !== 'undefined' && 'locks' in navigator) {
+    await navigator.locks.request('avaloirs-sync', { ifAvailable: true }, (lock) => (lock ? syncInner(opts) : undefined));
+  } else {
+    await syncInner(opts);
+  }
+}
+
+async function syncInner(opts: { manual?: boolean } = {}) {
   if (state.running) return;
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
     set({ lastError: 'offline' });

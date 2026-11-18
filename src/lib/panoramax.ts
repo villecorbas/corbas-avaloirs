@@ -44,9 +44,39 @@ export function getPanoramaxAuth(): PanoramaxAuth | null {
 }
 
 function setAuth(a: PanoramaxAuth | null) {
-  if (a) localStorage.setItem(KEY, JSON.stringify(a));
-  else localStorage.removeItem(KEY);
+  try {
+    if (a) localStorage.setItem(KEY, JSON.stringify(a));
+    else localStorage.removeItem(KEY);
+  } catch {
+    if (a) throw new PanoramaxError(0, 'storage_unavailable');
+  }
   window.dispatchEvent(new Event('avaloirs:auth'));
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function isPictureId(s: string): boolean {
+  return UUID.test(s);
+}
+
+/** Identifiant de photo valide d'un objet OSM (valeur non fiable : on ne retient que des UUID). */
+export function firstPictureId(tags: Record<string, string>): string | undefined {
+  for (const [k, v] of Object.entries(tags)) {
+    if (k !== 'panoramax' && !k.startsWith('panoramax:')) continue;
+    for (const part of String(v).split(';')) if (isPictureId(part.trim())) return part.trim();
+  }
+  return undefined;
+}
+
+/** Le lien de validation doit rester sur l'instance configurée (jamais un domaine tiers). */
+function safeClaimUrl(href: unknown, tokenId: string): string {
+  const fallback = `${instance()}/api/auth/tokens/${encodeURIComponent(tokenId)}/claim`;
+  try {
+    if (typeof href === 'string' && new URL(href).origin === new URL(instance()).origin) return href;
+  } catch {
+    /* ignore */
+  }
+  return fallback;
 }
 
 export function panoramaxReady(): boolean {
@@ -68,7 +98,7 @@ export async function startPanoramaxLogin(): Promise<PanoramaxAuth> {
     instance: instance(),
     tokenId: json.id,
     token: json.jwt_token,
-    claimUrl: claim?.href || `${instance()}/api/auth/tokens/${json.id}/claim`,
+    claimUrl: safeClaimUrl(claim?.href, json.id),
   };
   setAuth(auth);
   return auth;
@@ -83,7 +113,15 @@ export async function openPanoramaxClaim(): Promise<void> {
   const win = window.open('about:blank', '_blank');
   try {
     const a = await startPanoramaxLogin();
-    if (win) win.location.href = a.claimUrl;
+    if (win) {
+      // Coupe le lien avec l'application avant d'ouvrir un site tiers (anti « tabnabbing »).
+      try {
+        win.opener = null;
+      } catch {
+        /* ignore */
+      }
+      win.location.href = a.claimUrl;
+    }
     else window.open(a.claimUrl, '_blank');
   } catch (e) {
     win?.close();
@@ -210,9 +248,9 @@ export async function completeUploadSet(id: string) {
 
 /** Lien vers la photo sur l'instance d'envoi (disponible avant moissonnage par le méta-catalogue). */
 export function pictureViewerUrl(pictureId: string): string {
-  return `${instance()}/#focus=pic&pic=${pictureId}`;
+  return `${instance()}/#focus=pic&pic=${encodeURIComponent(pictureId)}`;
 }
 
 export function pictureThumbUrl(pictureId: string): string {
-  return `${instance()}/api/pictures/${pictureId}/thumb.jpg`;
+  return `${instance()}/api/pictures/${encodeURIComponent(pictureId)}/thumb.jpg`;
 }

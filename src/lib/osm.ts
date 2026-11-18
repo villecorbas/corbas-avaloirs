@@ -54,8 +54,13 @@ export function getOsmAuth(): OsmAuth | null {
 }
 
 function setOsmAuth(a: OsmAuth | null) {
-  if (a) localStorage.setItem(TOKEN_KEY, JSON.stringify(a));
-  else localStorage.removeItem(TOKEN_KEY);
+  try {
+    if (a) localStorage.setItem(TOKEN_KEY, JSON.stringify(a));
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    // Stockage refusé (navigation privée, quota) : la session ne pourra pas être conservée.
+    if (a) throw new Error('storage_unavailable');
+  }
   window.dispatchEvent(new Event('avaloirs:auth'));
 }
 
@@ -80,7 +85,11 @@ export async function startOsmLogin(opts: { signup?: boolean } = {}) {
     env: getConfig().openstreetmap.environment,
     createdAt: Date.now(),
   };
-  localStorage.setItem(PENDING_KEY, JSON.stringify(pending));
+  try {
+    localStorage.setItem(PENDING_KEY, JSON.stringify(pending));
+  } catch {
+    throw new Error('storage_unavailable');
+  }
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: clientId,
@@ -137,9 +146,17 @@ export async function handleOsmCallback(): Promise<CallbackResult> {
   }
 }
 
+const PENDING_TTL = 30 * 60 * 1000;
+
 function readPending(): Pending | null {
   try {
-    return JSON.parse(localStorage.getItem(PENDING_KEY) || 'null');
+    const p = JSON.parse(localStorage.getItem(PENDING_KEY) || 'null') as Pending | null;
+    // Une demande d'autorisation abandonnée ne reste pas valable indéfiniment.
+    if (p && Date.now() - p.createdAt > PENDING_TTL) {
+      localStorage.removeItem(PENDING_KEY);
+      return null;
+    }
+    return p;
   } catch {
     return null;
   }
@@ -195,8 +212,47 @@ export async function refreshOsmUser() {
 }
 
 export function osmLogout() {
+  const auth = getOsmAuth();
   setOsmAuth(null);
-  localStorage.removeItem(PENDING_KEY);
+  try {
+    localStorage.removeItem(PENDING_KEY);
+  } catch {
+    /* ignore */
+  }
+  // Révoque le jeton côté serveur (au mieux : la déconnexion locale est déjà effective).
+  if (auth) {
+    const { web, clientId } = osmUrls();
+    void fetch(`${web}/oauth2/revoke`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ token: auth.token, token_type_hint: 'access_token', client_id: clientId }),
+    }).catch(() => undefined);
+  }
+}
+
+/**
+ * Recherche, dans OSM même, un objet déjà publié avec cette photo près d'un point.
+ * Évite les doublons quand un envoi a abouti mais que sa réponse s'est perdue.
+ */
+export async function findPublishedByPicture(
+  at: { lat: number; lon: number },
+  pictureId: string,
+): Promise<{ type: OsmType; id: number } | null> {
+  const d = 0.0006; // ≈ 65 m
+  const bbox = [at.lon - d, at.lat - d, at.lon + d, at.lat + d].map((n) => n.toFixed(6)).join(',');
+  try {
+    const res = await fetch(`${osmUrls().api}/api/0.6/map.json?bbox=${bbox}`);
+    if (!res.ok) return null;
+    const json = await res.json();
+    for (const e of json.elements || []) {
+      if ((e.type === 'node' || e.type === 'way') && e.tags && Object.entries(e.tags).some(([k, v]) => k.startsWith('panoramax') && String(v).split(';').includes(pictureId))) {
+        return { type: e.type, id: e.id };
+      }
+    }
+  } catch {
+    /* indisponible : on laisse la création se poursuivre */
+  }
+  return null;
 }
 
 /* ------------------------------------------------------------------------ */

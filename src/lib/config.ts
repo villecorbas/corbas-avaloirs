@@ -48,6 +48,20 @@ function merge<T>(base: T, extra: unknown): T {
   return out as T;
 }
 
+/** Les serveurs configurables doivent être en HTTPS (jamais de jeton envoyé en clair). */
+export function sanitizeConfig(cfg: AppConfig): AppConfig {
+  const https = (u: unknown): u is string => typeof u === 'string' && /^https:\/\/[^\s]+$/i.test(u);
+  const overpass = (Array.isArray(cfg.overpass) ? cfg.overpass : []).filter(https);
+  const channel = ['way', 'node', 'none'].includes(cfg.openstreetmap.channelDrainTagging) ? cfg.openstreetmap.channelDrainTagging : 'way';
+  return {
+    ...cfg,
+    dailyGoal: Number.isFinite(cfg.dailyGoal) && cfg.dailyGoal > 0 ? Math.min(Math.round(cfg.dailyGoal), 100) : DEFAULTS.dailyGoal,
+    openstreetmap: { ...cfg.openstreetmap, channelDrainTagging: channel as AppConfig['openstreetmap']['channelDrainTagging'] },
+    panoramax: { instance: https(cfg.panoramax?.instance) ? cfg.panoramax.instance : DEFAULTS.panoramax.instance },
+    overpass: overpass.length ? overpass : DEFAULTS.overpass,
+  };
+}
+
 let cached: AppConfig | null = null;
 
 /** Réglages « développeur » stockés localement (mode test OSM, etc.). */
@@ -62,7 +76,7 @@ export function getConfig(): AppConfig {
     overrides = {};
   }
   const fromWindow = typeof window !== 'undefined' ? window.AVALOIRS_CONFIG : undefined;
-  cached = merge(merge(DEFAULTS, fromWindow), overrides);
+  cached = sanitizeConfig(merge(merge(DEFAULTS, fromWindow), overrides));
   return cached;
 }
 

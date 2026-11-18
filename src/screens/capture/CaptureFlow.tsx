@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { t } from '../../i18n';
 import { Icon } from '../../components/Icon';
-import { haptic, Sheet } from '../../components/ui';
+import { haptic, Sheet, toast } from '../../components/ui';
 import { saveRecord, uuid, kvGet, kvSet, requestPersistence, type DrainRecord } from '../../lib/db';
 import { computeProgress, newlyUnlocked, qualityScore, recordPoints, type BadgeState, type PointLine, type Progress } from '../../lib/gamification';
 import { reverseGeocode, type Address } from '../../lib/geocode';
@@ -136,8 +136,24 @@ export function CaptureFlow({ onClose, onOpenAccounts }: { onClose: () => void; 
     );
   }, [loc, details, obs, photo, records]);
 
+  const savingRef = useRef(false);
   const save = async () => {
-    if (!photo || !loc || !details.type) return;
+    if (savingRef.current) return; // un double toucher ne doit pas créer deux relevés
+    savingRef.current = true;
+    try {
+      await doSave();
+    } catch {
+      savingRef.current = false;
+      setSaving(false);
+      toast(t('errors.saveFailed'), 'warning', 'var(--red)');
+    }
+  };
+
+  const doSave = async () => {
+    if (!photo || !loc || !details.type) {
+      savingRef.current = false;
+      return;
+    }
     setSaving(true);
     const now = Date.now();
     const traced = details.type === 'channel' && withTrace && line ? line : undefined;
@@ -177,6 +193,7 @@ export function CaptureFlow({ onClose, onOpenAccounts }: { onClose: () => void; 
   };
 
   const another = () => {
+    savingRef.current = false;
     setPhoto(undefined);
     setLoc(undefined);
     setLine(undefined);
