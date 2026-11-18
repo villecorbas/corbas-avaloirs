@@ -10,8 +10,8 @@ window.AVALOIRS_CONFIG = {
   // Commune ciblée. Laisser insee vide pour la détecter automatiquement
   // à partir de la position du premier relevé (Base Adresse Nationale).
   commune: {
-    insee: '',
-    name: '',
+    insee: '69273',
+    name: 'Corbas',
     // Nombre estimé d'avaloirs sur la commune : sert à la jauge collective.
     estimatedDrains: 1500,
   },
@@ -24,7 +24,7 @@ window.AVALOIRS_CONFIG = {
     environment: 'production',
     // Identifiant de l'application OAuth 2 enregistrée sur
     // https://www.openstreetmap.org/oauth2/applications (client « public », sans secret).
-    clientId: '',
+    clientId: 'cB5_OVQGhlAox3QpQrlDuTlOmiYlZK3STwnUdaPc1XQ',
     clientIdDev: '',
     // Facultatif : URL de retour OAuth. Par défaut, l'adresse de l'application.
     redirectUri: '',
