@@ -185,26 +185,16 @@ export function AccountWizard({ onDone, doneLabel }: { onDone: () => void; doneL
             {t('wizard.photosText')}
           </p>
           {!pnx && (
-            <button className="btn" onClick={goPanoramax} disabled={busy}>
-              {busy ? <Spinner /> : null}
-              {t('wizard.photosButton')}
-            </button>
+            <>
+              <button className="btn" onClick={goPanoramax} disabled={busy}>
+                {busy ? <Spinner /> : null}
+                {t('wizard.photosButton')}
+              </button>
+              <p className="footnote secondary center" style={{ margin: 0 }}>{t('wizard.photosHeads')}</p>
+            </>
           )}
           {pnxPending && (
-            <div className="card stack" style={{ gap: 10 }}>
-              <div className="row footnote" style={{ alignItems: 'flex-start' }}>
-                <Spinner size={18} />
-                <span>{t('wizard.photosWaiting')}</span>
-              </div>
-              <div className="btn-row">
-                <a className="btn small tinted" href={pnx!.claimUrl} target="_blank" rel="noopener">
-                  {t('accounts.pnxReopen')}
-                </a>
-                <button className="btn small gray" onClick={panoramaxLogout}>
-                  {t('common.cancel')}
-                </button>
-              </div>
-            </div>
+            <PanoramaxWaiting claimUrl={pnx!.claimUrl} onCancel={panoramaxLogout} />
           )}
           {tosNeeded && (
             <div className="card stack" style={{ gap: 10 }}>
@@ -242,6 +232,56 @@ export function AccountWizard({ onDone, doneLabel }: { onDone: () => void; doneL
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Attente de la connexion Panoramax. La page « Connexion terminée » appartient à Panoramax :
+ * elle ne ramène pas dans l'application. On guide donc l'utilisateur pas à pas et on vérifie
+ * la connexion automatiquement (toutes les 3 s, et dès le retour dans l'appli).
+ */
+export function PanoramaxWaiting({ claimUrl, onCancel }: { claimUrl: string; onCancel: () => void }) {
+  const [checking, setChecking] = useState(false);
+  const verify = async () => {
+    haptic();
+    setChecking(true);
+    try {
+      const a = await checkPanoramaxUser();
+      if (a?.user) haptic('success');
+      else toast(t('wizard.notYet'), 'info', 'var(--orange)');
+    } catch {
+      toast(t('errors.network'), 'warning', 'var(--red)');
+    } finally {
+      setChecking(false);
+    }
+  };
+  return (
+    <div className="card stack" style={{ gap: 12 }} role="status">
+      <div className="row" style={{ gap: 8 }}>
+        <Spinner size={18} />
+        <strong>{t('wizard.waitTitle')}</strong>
+      </div>
+      <ol className="pnx-steps">
+        {(['wait1', 'wait2', 'wait3'] as const).map((k, i) => (
+          <li key={k}>
+            <span className="step-num">{i + 1}</span>
+            <span>{t(`wizard.${k}`)}</span>
+          </li>
+        ))}
+      </ol>
+      <button className="btn" onClick={verify} disabled={checking}>
+        {checking ? <Spinner /> : <Icon name="check" stroke={2.6} />}
+        {t('wizard.waitDone')}
+      </button>
+      <div className="btn-row">
+        <a className="btn small tinted" href={claimUrl} target="_blank" rel="noopener">
+          {t('accounts.pnxReopen')}
+        </a>
+        <button className="btn small gray" onClick={onCancel}>
+          {t('common.cancel')}
+        </button>
+      </div>
     </div>
   );
 }

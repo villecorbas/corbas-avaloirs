@@ -19,6 +19,7 @@ import {
   panoramaxLogout,
 } from '../lib/panoramax';
 import { useAuth, usePanoramaxClaimPolling } from '../lib/store';
+import { PanoramaxWaiting } from './AccountWizard';
 
 /** Section « Comptes » : OpenStreetMap (OAuth 2) puis Panoramax (jeton réclamé). */
 export function Accounts() {
@@ -153,21 +154,7 @@ export function Accounts() {
                 {t('accounts.pnxConnect')}
               </button>
             )}
-            {pnxPending && (
-              <div className="stack" style={{ gap: 8 }}>
-                <div className="row footnote">
-                  <Spinner size={16} /> {t('accounts.pnxWaiting')}
-                </div>
-                <div className="btn-row">
-                  <a className="btn small tinted" href={pnx!.claimUrl} target="_blank" rel="noopener">
-                    {t('accounts.pnxReopen')}
-                  </a>
-                  <button className="btn small gray" onClick={panoramaxLogout}>
-                    {t('common.cancel')}
-                  </button>
-                </div>
-              </div>
-            )}
+            {pnxPending && <PanoramaxWaiting claimUrl={pnx!.claimUrl} onCancel={panoramaxLogout} />}
             {pnx?.user && pnx.user.tosAccepted === false && (
               <div className="stack" style={{ gap: 8 }}>
                 <span className="footnote" style={{ color: 'var(--orange)' }}>

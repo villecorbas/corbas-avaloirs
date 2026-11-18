@@ -342,8 +342,10 @@ async function main() {
     const popupPromise = context.waitForEvent('page');
     await page.getByRole('button', { name: 'Autoriser la publication des photos' }).click();
     const popup = await popupPromise;
+    await page.getByText('Connexion en cours…').waitFor({ timeout: 2500 }).catch(() => undefined);
+    check(await page.getByText('Quand la page affiche « Connexion terminée »').isVisible().catch(() => false), 'Panoramax : consignes de retour dans l’appli affichées');
+    await shot('17d-panoramax-attente');
     await popup.waitForLoadState().catch(() => undefined);
-    await wait(500);
     await popup.close().catch(() => undefined);
     await page.getByText('Tout est prêt !').waitFor({ timeout: 15000 });
     check(state.claimed, 'Panoramax : jeton réclamé via la page de connexion');

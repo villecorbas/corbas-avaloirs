@@ -1629,3 +1629,19 @@
   box-shadow: var(--shadow-strong);
   animation: pop 0.5s var(--spring);
 }
+
+.pnx-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 19px;
+}
+.pnx-steps li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
