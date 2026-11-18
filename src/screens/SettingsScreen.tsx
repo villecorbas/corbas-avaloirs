@@ -1,6 +1,5 @@
-import { useMemo, useState } from 'react';
-import qrcode from 'qrcode-generator';
-import { APP_VERSION, appBaseUrl, getConfig, setConfigOverride } from '../lib/config';
+import { useState } from 'react';
+import { APP_VERSION, getConfig, setConfigOverride } from '../lib/config';
 import { LANGS, setLang, t, useLang, type Lang } from '../i18n';
 import { Icon, type IconName } from '../components/Icon';
 import { Segmented, Sheet, Spinner, toast } from '../components/ui';
@@ -33,11 +32,11 @@ function Row({ icon, color, label, value, onClick, href }: { icon: IconName; col
   );
 }
 
-export function SettingsScreen() {
+export function SettingsScreen({ onInvite }: { onInvite: () => void }) {
   const lang = useLang();
   const records = useRecords() || [];
   const commune = useCommune();
-  const [sheet, setSheet] = useState<'share' | 'install' | 'about' | null>(null);
+  const [sheet, setSheet] = useState<'install' | 'about' | null>(null);
   const [exporting, setExporting] = useState(false);
   const cfg = getConfig();
   const dev = cfg.openstreetmap.environment === 'dev';
@@ -72,7 +71,7 @@ export function SettingsScreen() {
       <h3 className="section-title">{t('settings.app')}</h3>
       <div className="list">
         {!isStandalone() && <Row icon="download" color="var(--blue)" label={t('settings.install')} onClick={() => setSheet('install')} />}
-        <Row icon="qr" color="var(--indigo)" label={t('settings.share')} onClick={() => setSheet('share')} />
+        <Row icon="qr" color="var(--indigo)" label={t('settings.share')} onClick={onInvite} />
       </div>
 
       <h3 className="section-title">{t('settings.data')}</h3>
@@ -123,9 +122,6 @@ export function SettingsScreen() {
         <Row icon="photo" color="#c6a96b" label="Panoramax" href="https://panoramax.fr" />
       </div>
 
-      <Sheet open={sheet === 'share'} onClose={() => setSheet(null)} title={t('settings.share')} elevated>
-        <ShareContent />
-      </Sheet>
       <Sheet open={sheet === 'install'} onClose={() => setSheet(null)} title={t('install.title')} elevated>
         <InstallGuide onDone={() => setSheet(null)} />
       </Sheet>
@@ -139,37 +135,6 @@ export function SettingsScreen() {
           </p>
         </div>
       </Sheet>
-    </div>
-  );
-}
-
-function ShareContent() {
-  const url = appBaseUrl();
-  const svg = useMemo(() => {
-    const qr = qrcode(0, 'M');
-    qr.addData(url);
-    qr.make();
-    return qr.createSvgTag({ cellSize: 6, margin: 2, scalable: true });
-  }, [url]);
-  return (
-    <div className="stack center" style={{ alignItems: 'center' }}>
-      <p className="subhead secondary" style={{ margin: 0 }}>{t('share.text')}</p>
-      <div className="qr" dangerouslySetInnerHTML={{ __html: svg }} />
-      <code className="footnote selectable" style={{ wordBreak: 'break-all' }}>{url}</code>
-      {'share' in navigator && (
-        <button
-          className="btn"
-          onClick={() => void navigator.share({ title: getConfig().campaignName, text: t('share.message'), url }).catch(() => undefined)}
-        >
-          <Icon name="share" /> {t('share.button')}
-        </button>
-      )}
-      <button
-        className="btn gray"
-        onClick={() => void navigator.clipboard?.writeText(url).then(() => toast(t('share.copied'), 'check'))}
-      >
-        {t('share.copy')}
-      </button>
     </div>
   );
 }

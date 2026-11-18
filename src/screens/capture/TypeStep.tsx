@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import { t } from '../../i18n';
 import { DrainIllustration } from '../../components/DrainIllustration';
 import { Icon } from '../../components/Icon';
@@ -5,6 +6,7 @@ import { haptic, Segmented } from '../../components/ui';
 import {
   channelMode,
   DRAIN_TYPES,
+  STANDING_WATER,
   type DrainDetails,
   type DrainMaterial,
   type DrainShape,
@@ -37,6 +39,8 @@ export function TypeStep({
     if (type !== 'kerb_opening') next.hasCover = undefined;
     onChange(next, observations);
   };
+  const [missing, setMissing] = useState(false);
+  const waterRef = useRef<HTMLHeadingElement>(null);
   const tri = (v: TriState | undefined, key: keyof Observations) => (value: TriState) =>
     onChange(details, { ...observations, [key]: v === value ? undefined : value });
 
@@ -88,6 +92,40 @@ export function TypeStep({
 
       {details.type && (
         <div className="slide-in">
+          <h3 className="section-title" ref={waterRef}>
+            {t('water.title')} <span className="required-tag">{t('water.required')}</span>
+          </h3>
+          <div className={`card stack water-card ${missing && !observations.standingWater ? 'missing' : ''}`}>
+            <span className="headline">
+              <Icon name="drop" size={18} style={{ verticalAlign: '-3px', marginRight: 6, color: 'var(--blue)' }} />
+              {t('water.question')}
+            </span>
+            <div className="water-options" role="radiogroup" aria-label={t('water.question')}>
+              {STANDING_WATER.map((v) => (
+                <button
+                  key={v}
+                  role="radio"
+                  aria-checked={observations.standingWater === v}
+                  className={`water-option ${v} ${observations.standingWater === v ? 'selected' : ''}`}
+                  onClick={() => {
+                    haptic();
+                    onChange(details, { ...observations, standingWater: v });
+                  }}
+                >
+                  <span className="water-emoji" aria-hidden="true">{v === 'yes' ? '💧' : v === 'possible' ? '〰️' : '☀️'}</span>
+                  <span className="water-label">{t(`water.${v}`)}</span>
+                  <span className="water-hint">{t(`water.${v}Hint`)}</span>
+                </button>
+              ))}
+            </div>
+            {missing && !observations.standingWater && (
+              <p className="footnote" style={{ margin: 0, color: 'var(--red)' }} role="alert">
+                {t('water.missing')}
+              </p>
+            )}
+          </div>
+          <p className="section-footer">{t('water.footer')}</p>
+
           <h3 className="section-title">{t('type.detailsTitle')}</h3>
           <div className="card stack">
             {details.type !== 'kerb_opening' && details.type !== 'channel' && (
@@ -131,18 +169,6 @@ export function TypeStep({
 
           <h3 className="section-title">{t('type.obsTitle')}</h3>
           <div className="card stack">
-            <Field label={t('obs.standingWater')} icon="drop">
-              <Segmented<TriState>
-                label={t('obs.standingWater')}
-                value={observations.standingWater}
-                onChange={tri(observations.standingWater, 'standingWater')}
-                options={[
-                  { value: 'yes', label: t('common.yes') },
-                  { value: 'no', label: t('common.no') },
-                  { value: 'unknown', label: t('common.dontKnow') },
-                ]}
-              />
-            </Field>
             <Field label={t('obs.clogged')} icon="warning">
               <Segmented<TriState>
                 label={t('obs.clogged')}
@@ -161,7 +187,19 @@ export function TypeStep({
       )}
 
       <div className="sticky-cta">
-        <button className="btn" disabled={!details.type} onClick={onNext}>
+        <button
+          className="btn"
+          disabled={!details.type}
+          onClick={() => {
+            if (!observations.standingWater) {
+              haptic('warning');
+              setMissing(true);
+              waterRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              return;
+            }
+            onNext();
+          }}
+        >
           {t('common.continue')}
         </button>
       </div>

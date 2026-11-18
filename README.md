@@ -121,6 +121,19 @@ Chaque photo porte : position et heure de prise de vue, cap (boussole), précisi
 - **Objectif collectif** de la commune (jauge « X / ~1 500 avaloirs ») et **classement** des contributeurs, calculés à partir des données publiques d'OSM (Overpass), sans serveur à maintenir.
 - **Parrainage** : QR code « Inviter un voisin » dans les réglages.
 
+- **Classement des participants** (onglet Défis) : podium et liste complète, « Ce mois-ci » ou « Depuis le début ». Le score est commun à tous et vérifiable, calculé sur les données publiques d'OSM : 10 points par avaloir, +5 avec photo (le détail des points de l'appli reste propre à chaque téléphone, faute de serveur central).
+- **Rappels pour les contributeurs sans compte** : bandeau 🔒 sur la carte, carte d'alerte après chaque relevé et fenêtre de rappel (au plus toutes les 12 h) indiquant le nombre de relevés non envoyés et les points « bloqués » à débloquer en se connectant.
+- **Inviter mes proches** : WhatsApp, SMS, e-mail, partage natif, QR code ; le lien porte le pseudonyme de l'invitant (« X vous invite à participer » à l'accueil).
+- **Partager mon score** : carte image (format réseaux sociaux, avec QR code pour rejoindre), partage natif (Instagram, etc.) et liens Facebook, WhatsApp, X, LinkedIn, Bluesky.
+
+### Carte de couverture
+
+L'écran Carte charge tous les avaloirs de la zone affichée (cercle plein : avec photo ; cercle vide : sans photo) et superpose les **rues à explorer** : chaque tronçon de rue (≈ 40 m) sans avaloir connu à moins de 35 m apparaît en pointillés orange, les tronçons couverts en vert, avec le taux de couverture de la zone. Le calque se masque d'un geste.
+
+### Eau stagnante : question obligatoire
+
+« Peut-il retenir de l'eau stagnante ? » — *Oui, visible* / *Possible* / *Non* — doit être renseignée pour chaque relevé : c'est l'information clé pour la lutte anti-vectorielle. Elle est publiée avec la photo sur Panoramax (`avaloirs|standing_water=yes|possible|no`) et figure dans les exports.
+
 ## 5. Mise en service
 
 ### 5.1 Compiler

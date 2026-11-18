@@ -13,6 +13,10 @@ import { SettingsScreen } from './screens/SettingsScreen';
 import { Onboarding } from './screens/Onboarding';
 import { InstallGuide } from './screens/InstallGuide';
 import { AccountWizard, markWizardResume, shouldResumeWizard } from './screens/AccountWizard';
+import { LockedNudge } from './components/LockedReminder';
+import { InviteScreen } from './screens/InviteScreen';
+import { ShareScoreScreen } from './screens/ShareScoreScreen';
+import { getOsmAuth, osmConfigured } from './lib/osm';
 
 type Tab = 'map' | 'records' | 'profile' | 'settings';
 const TABS: { id: Tab; icon: IconName; label: string }[] = [
@@ -24,6 +28,8 @@ const TABS: { id: Tab; icon: IconName; label: string }[] = [
 
 const ONBOARDED_KEY = 'avaloirs.onboarded';
 const INSTALL_DISMISSED_KEY = 'avaloirs.installDismissed';
+const NUDGE_KEY = 'avaloirs.lastNudge';
+const NUDGE_INTERVAL = 12 * 3600 * 1000;
 
 function readFlag(key: string) {
   try {
@@ -74,6 +80,35 @@ export function App() {
     setInstall(false);
   };
 
+  // Rappel « travail non envoyé » (au plus toutes les 12 h) pour les contributeurs sans compte.
+  const [nudge, setNudge] = useState(false);
+  const [social, setSocial] = useState<'invite' | 'share' | null>(null);
+  useEffect(() => {
+    const check = () => {
+      if (!onboarded || capturing || wizard || !osmConfigured() || getOsmAuth() || progress.unsent === 0) return;
+      let last = 0;
+      try {
+        last = Number(localStorage.getItem(NUDGE_KEY) || 0);
+      } catch {
+        /* ignore */
+      }
+      if (Date.now() - last < NUDGE_INTERVAL) return;
+      try {
+        localStorage.setItem(NUDGE_KEY, String(Date.now()));
+      } catch {
+        /* ignore */
+      }
+      setNudge(true);
+    };
+    const timer = setTimeout(check, 1200);
+    const onVis = () => document.visibilityState === 'visible' && check();
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, [onboarded, capturing, wizard, progress.unsent]);
+
   const openAccounts = useCallback(() => setWizard(true), []);
   const closeWizard = () => {
     markWizardResume(false);
@@ -89,8 +124,8 @@ export function App() {
       <main className="app">
         {tab === 'map' && <MapScreen onAdd={() => setCapturing(true)} onOpenProfile={() => setTab('profile')} onOpenAccounts={openAccounts} />}
         {tab === 'records' && <RecordsScreen onOpenAccounts={openAccounts} onAdd={() => setCapturing(true)} />}
-        {tab === 'profile' && <ProfileScreen />}
-        {tab === 'settings' && <SettingsScreen />}
+        {tab === 'profile' && <ProfileScreen onConnect={openAccounts} onInvite={() => setSocial('invite')} onShare={() => setSocial('share')} />}
+        {tab === 'settings' && <SettingsScreen onInvite={() => setSocial('invite')} />}
       </main>
 
       <nav className="tabbar" aria-label={t('tabs.label')}>
@@ -113,6 +148,21 @@ export function App() {
           <AccountWizard onDone={closeWizard} doneLabel={t('wizard.done')} />
         </div>
       )}
+
+      {social === 'invite' && <InviteScreen onClose={() => setSocial(null)} />}
+      {social === 'share' && <ShareScoreScreen onClose={() => setSocial(null)} />}
+
+      <Sheet open={nudge} onClose={() => setNudge(false)} elevated>
+        <LockedNudge
+          count={progress.unsent}
+          points={progress.lockedPoints}
+          onConnect={() => {
+            setNudge(false);
+            setWizard(true);
+          }}
+          onLater={() => setNudge(false)}
+        />
+      </Sheet>
 
       <Sheet open={install} onClose={closeInstall} title={t('install.title')} elevated>
         <InstallGuide onDone={closeInstall} />

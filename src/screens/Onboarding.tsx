@@ -7,6 +7,7 @@ import { DrainIllustration } from '../components/DrainIllustration';
 import { enableCompass, requestLocationPermission } from '../lib/location';
 import { platform } from '../lib/store';
 import { AccountWizard } from './AccountWizard';
+import { invitedBy } from '../lib/invite';
 
 const PAGE_KEY = 'avaloirs.onboardingPage';
 const PAGES = 5;
@@ -95,6 +96,11 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
               <MosquitoBadge />
             </div>
           </div>
+          {invitedBy() && (
+            <div className="center">
+              <span className="chip accent pop">🎉 {t('onboarding.invitedBy', { name: invitedBy()! })}</span>
+            </div>
+          )}
           <h1 className="title1 center">{t('onboarding.p1Title')}</h1>
           <p className="subhead secondary center">{t('onboarding.p1Text')}</p>
           <p className="footnote secondary center">{getConfig().campaignName}</p>

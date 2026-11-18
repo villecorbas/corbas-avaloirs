@@ -28,7 +28,7 @@ export function qualityParts(q: QualityInput): QualityPart[] {
   // La forme n'est pas demandée pour une bouche ou un caniveau : pas de pénalité.
   if (q.details.shape || q.details.type === 'kerb_opening' || q.details.type === 'channel') details += 5;
   if (q.details.material) details += 5;
-  const obs = (q.observations.standingWater && q.observations.standingWater !== 'unknown' ? 5 : 0) +
+  const obs = (q.observations.standingWater ? 5 : 0) +
     (q.observations.clogged && q.observations.clogged !== 'unknown' ? 5 : 0);
   return [
     { key: 'precision', score: Math.max(0, precision + averagingBonus), max: 40 },
@@ -208,6 +208,9 @@ export interface Progress {
   count: number;
   published: number;
   pending: number;
+  /** Relevés pas encore publiés sur OSM, et points de publication correspondants « verrouillés ». */
+  unsent: number;
+  lockedPoints: number;
 }
 
 export function computeProgress(records: DrainRecord[], now = Date.now()): Progress {
@@ -232,6 +235,8 @@ export function computeProgress(records: DrainRecord[], now = Date.now()): Progr
     count: stats.count,
     published: stats.published,
     pending: sorted.filter((r) => needsSync(r)).length,
+    unsent: sorted.filter((r) => r.sync.osm.status !== 'done' && r.sync.osm.status !== 'skipped').length,
+    lockedPoints: sorted.filter((r) => r.sync.osm.status !== 'done' && r.sync.osm.status !== 'skipped').length * PUBLISH_BONUS,
   };
 }
 

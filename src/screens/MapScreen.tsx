@@ -3,10 +3,11 @@ import { getConfig } from '../lib/config';
 import { t } from '../i18n';
 import { Icon } from '../components/Icon';
 import { MapView, type BaseLayer, type MapHandle, type MapLine, type MapMarker } from '../components/MapView';
-import { Ring, Sheet } from '../components/ui';
-import { distance, type LatLon } from '../lib/geo';
+import { Ring, Sheet, Spinner, toast } from '../components/ui';
+import type { LatLon } from '../lib/geo';
 import { useLocation } from '../lib/location';
-import { cachedNearbyDrains, fetchNearbyDrains, type OsmDrain } from '../lib/overpass';
+import { cachedArea, cachedNearbyDrains, fetchArea, fetchNearbyDrains, type AreaData, type OsmDrain } from '../lib/overpass';
+import { computeCoverage } from '../lib/coverage';
 import { useAuth, useProgress, useRecords } from '../lib/store';
 import { useSyncState } from '../lib/sync';
 import { needsSync } from '../lib/gamification';
@@ -15,8 +16,11 @@ import { osmElementUrl } from '../lib/osm';
 import { recordCenter } from '../lib/export';
 import { panoramaxReady, pictureThumbUrl, pictureViewerUrl } from '../lib/panoramax';
 import { RecordDetail } from './RecordDetail';
+import { LockedBanner } from '../components/LockedReminder';
 
 const DEFAULT_CENTER: LatLon = { lat: 46.6, lon: 2.4 };
+const MIN_ZOOM = 15.5;
+const COVERAGE_KEY = 'avaloirs.coverage';
 
 export function MapScreen({ onAdd, onOpenProfile, onOpenAccounts }: { onAdd: () => void; onOpenProfile: () => void; onOpenAccounts: () => void }) {
   const records = useRecords() || [];
@@ -26,13 +30,23 @@ export function MapScreen({ onAdd, onOpenProfile, onOpenAccounts }: { onAdd: () 
   const sync = useSyncState();
   const [layer, setLayer] = useState<BaseLayer>('plan');
   const [nearby, setNearby] = useState<OsmDrain[]>([]);
+  const [area, setArea] = useState<AreaData | null>(null);
+  const [zoom, setZoom] = useState(18);
+  const [loadingArea, setLoadingArea] = useState(false);
+  const [coverageOn, setCoverageOn] = useState(() => {
+    try {
+      return localStorage.getItem(COVERAGE_KEY) !== '0';
+    } catch {
+      return true;
+    }
+  });
   const [selected, setSelected] = useState<{ kind: 'osm'; drain: OsmDrain } | { kind: 'mine'; id: string } | null>(null);
   const [following, setFollowing] = useState(true);
   const mapRef = useRef<MapHandle>(null);
-  const lastFetch = useRef<LatLon | null>(null);
   const startCenter = useRef<LatLon>(records[0]?.position || DEFAULT_CENTER);
 
   useEffect(() => {
+    void cachedArea().then((a) => a && setArea((cur) => cur || a));
     void cachedNearbyDrains().then((c) => {
       if (!c) return;
       setNearby(c.drains);
@@ -49,14 +63,40 @@ export function MapScreen({ onAdd, onOpenProfile, onOpenAccounts }: { onAdd: () 
     map.setView([loc.fix.lat, loc.fix.lon], Math.max(map.getZoom(), 18), { animate: true });
   }, [loc.fix, following]);
 
-  const loadAround = useCallback((c: LatLon, zoom: number) => {
-    if (zoom < 15.5) return;
-    if (lastFetch.current && distance(lastFetch.current, c) < 200) return;
-    lastFetch.current = c;
-    fetchNearbyDrains(c, 600)
-      .then(setNearby)
-      .catch(() => undefined);
+  // Charge avaloirs et rues de la zone affichée (avec une marge), quand on a assez zoomé.
+  const fetched = useRef<[number, number, number, number] | null>(null);
+  const loadArea = useCallback((c: LatLon, z: number) => {
+    setZoom(z);
+    const map = mapRef.current?.map();
+    if (!map || z < MIN_ZOOM) return;
+    const b = map.getBounds();
+    const f = fetched.current;
+    if (f && b.getSouth() >= f[0] && b.getWest() >= f[1] && b.getNorth() <= f[2] && b.getEast() <= f[3]) return;
+    const pad = b.pad(0.6);
+    const bbox: [number, number, number, number] = [pad.getSouth(), pad.getWest(), pad.getNorth(), pad.getEast()];
+    fetched.current = bbox;
+    setLoadingArea(true);
+    fetchArea(bbox)
+      .then(setArea)
+      .catch(() => {
+        fetched.current = null;
+        // Repli : avaloirs autour du centre uniquement.
+        void fetchNearbyDrains(c, 600).then(setNearby).catch(() => undefined);
+      })
+      .finally(() => setLoadingArea(false));
   }, []);
+
+  const drains = useMemo(() => {
+    if (!area) return nearby;
+    const seen = new Set(area.drains.map((d) => `${d.type}:${d.id}`));
+    return [...area.drains, ...nearby.filter((d) => !seen.has(`${d.type ?? 'node'}:${d.id}`))];
+  }, [area, nearby]);
+
+  // Rues à explorer : tronçons sans avaloir connu (OSM ou relevé local) à moins de 35 m.
+  const coverage = useMemo(() => {
+    if (!coverageOn || !area?.streets.length) return null;
+    return computeCoverage(area.streets, [...drains, ...records.map(recordCenter)]);
+  }, [coverageOn, area, drains, records]);
 
   const mineKeys = useMemo(
     () =>
@@ -71,39 +111,46 @@ export function MapScreen({ onAdd, onOpenProfile, onOpenAccounts }: { onAdd: () 
 
   const markers: MapMarker[] = useMemo(
     () => [
-      ...nearby
+      ...drains
         .filter((d) => !mineKeys.has(`${d.type ?? 'node'}:${d.id}`))
-        .map((d) => ({ id: `osm:${d.type ?? 'node'}:${d.id}`, lat: d.lat, lon: d.lon, kind: 'osm' as const })),
+        .map((d) => ({
+          id: `osm:${d.type ?? 'node'}:${d.id}`,
+          lat: d.lat,
+          lon: d.lon,
+          kind: Object.keys(d.tags).some((k) => k.startsWith('panoramax')) ? ('osm' as const) : ('osmNoPhoto' as const),
+        })),
       ...records.map((r) => {
         const c = recordCenter(r);
         return { id: `mine:${r.id}`, lat: c.lat, lon: c.lon, kind: needsSync(r) ? ('pending' as const) : ('mine' as const) };
       }),
     ],
-    [nearby, records, mineKeys],
+    [drains, records, mineKeys],
   );
 
   // Caniveaux à grille : tracés en ligne.
   const lines: MapLine[] = useMemo(
     () => [
-      ...nearby
+      ...(coverage ? coverage.covered.map((p, i) => ({ id: `cov:${i}`, points: p, kind: 'covered' as const })) : []),
+      ...(coverage ? coverage.todo.map((p, i) => ({ id: `todo:${i}`, points: p, kind: 'todo' as const })) : []),
+      ...drains
         .filter((d) => d.geometry && !mineKeys.has(`way:${d.id}`))
         .map((d) => ({ id: `osm-line:${d.id}`, points: d.geometry!, kind: 'osm' as const })),
       ...records
         .filter((r) => r.line)
         .map((r) => ({ id: `mine-line:${r.id}`, points: [r.line!.a, r.line!.b], kind: needsSync(r) ? ('pending' as const) : ('mine' as const) })),
     ],
-    [nearby, records, mineKeys],
+    [drains, records, mineKeys, coverage],
   );
 
   const onMarkerClick = useCallback(
     (id: string) => {
       const [kind, a, b] = id.split(':');
       if (kind === 'osm') {
-        const drain = nearby.find((d) => (d.type ?? 'node') === a && String(d.id) === b);
+        const drain = drains.find((d) => (d.type ?? 'node') === a && String(d.id) === b);
         if (drain) setSelected({ kind: 'osm', drain });
       } else setSelected({ kind: 'mine', id: a });
     },
-    [nearby],
+    [drains],
   );
 
   const goal = getConfig().dailyGoal;
@@ -121,7 +168,7 @@ export function MapScreen({ onAdd, onOpenProfile, onOpenAccounts }: { onAdd: () 
         lines={lines}
         user={loc.fix}
         onMarkerClick={onMarkerClick}
-        onMoveEnd={loadAround}
+        onMoveEnd={loadArea}
         onDragStart={() => setFollowing(false)}
       />
 
@@ -149,6 +196,8 @@ export function MapScreen({ onAdd, onOpenProfile, onOpenAccounts }: { onAdd: () 
             <Icon name="sync" size={16} className="spin" />
             {t('sync.running', { done: sync.done, total: sync.total })}
           </div>
+        ) : !auth.osm && progress.unsent > 0 ? (
+          <LockedBanner count={progress.unsent} points={progress.lockedPoints} onConnect={onOpenAccounts} />
         ) : pending > 0 && !connected ? (
           <button className="sync-pill warn slide-in" onClick={onOpenAccounts}>
             <Icon name="cloudUp" size={16} />
@@ -162,6 +211,24 @@ export function MapScreen({ onAdd, onOpenProfile, onOpenAccounts }: { onAdd: () 
           <Icon name="layers" />
         </button>
         <button
+          className={`icon-btn ${coverageOn ? 'active' : ''}`}
+          aria-pressed={coverageOn}
+          aria-label={t('map.toggleCoverage')}
+          title={t('map.toggleCoverage')}
+          onClick={() => {
+            const v = !coverageOn;
+            setCoverageOn(v);
+            toast(v ? t('map.coverageOn') : t('map.coverageOff'), 'route');
+            try {
+              localStorage.setItem(COVERAGE_KEY, v ? '1' : '0');
+            } catch {
+              /* ignore */
+            }
+          }}
+        >
+          <Icon name="route" />
+        </button>
+        <button
           className="icon-btn"
           onClick={() => {
             setFollowing(true);
@@ -173,10 +240,30 @@ export function MapScreen({ onAdd, onOpenProfile, onOpenAccounts }: { onAdd: () 
         </button>
       </div>
 
-      <div className="map-legend" aria-hidden="true">
+      {zoom < MIN_ZOOM ? (
+        <div className="map-hint slide-in" role="status">
+          <Icon name="map" size={16} /> {t('map.zoomHint')}
+        </div>
+      ) : loadingArea && !area ? (
+        <div className="map-hint" role="status">
+          <Spinner size={16} /> {t('map.loading')}
+        </div>
+      ) : null}
+
+      <div className="map-legend">
         <span><i style={{ background: '#5e5ce6' }} />{t('map.legendOsm')}</span>
+        <span><i style={{ background: '#fff', borderColor: '#5e5ce6' }} />{t('map.legendNoPhoto')}</span>
         <span><i style={{ background: '#00a588' }} />{t('map.legendMine')}</span>
         <span><i style={{ background: '#ff9500' }} />{t('map.legendPending')}</span>
+        {coverageOn && (
+          <>
+            <span><b className="legend-line todo" />{t('map.legendTodo')}</span>
+            <span><b className="legend-line covered" />{t('map.legendCovered')}</span>
+            {coverage && zoom >= MIN_ZOOM && (
+              <span className="legend-ratio rounded-num">{t('map.coverageRatio', { pct: Math.round(coverage.ratio * 100) })}</span>
+            )}
+          </>
+        )}
       </div>
 
       <button className="fab" onClick={onAdd}>

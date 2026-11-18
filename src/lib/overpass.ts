@@ -130,3 +130,39 @@ out meta geom;`;
 export async function cachedCommuneStats(insee: string): Promise<CommuneStats | undefined> {
   return kvGet(`commune:${insee}`);
 }
+
+/* ------------------------- Zone affichée sur la carte ------------------------ */
+
+export interface AreaData {
+  bbox: [number, number, number, number]; // sud, ouest, nord, est
+  drains: OsmDrain[];
+  streets: LatLon[][];
+  at: number;
+}
+
+/** Rues où l'on trouve des avaloirs (hors chemins, pistes et voies de service). */
+const STREET_TYPES = 'primary|secondary|tertiary|unclassified|residential|living_street|pedestrian';
+
+/** Avaloirs et rues d'une emprise (une seule requête Overpass). */
+export async function fetchArea(bbox: [number, number, number, number]): Promise<AreaData> {
+  const b = bbox.map((n) => n.toFixed(5)).join(',');
+  const q = `[out:json][timeout:25][bbox:${b}];
+(${DRAIN_FILTER('')});
+out body geom;
+way["highway"~"^(${STREET_TYPES})$"];
+out geom;`;
+  const json = await runOverpass(q);
+  const streets: LatLon[][] = [];
+  const drainElements: RawElement[] = [];
+  for (const e of json.elements as (RawElement & { tags?: Tags })[]) {
+    if (e.type === 'way' && e.tags?.highway && e.geometry) streets.push(e.geometry.map((g) => ({ lat: g.lat, lon: g.lon })));
+    else drainElements.push(e);
+  }
+  const data: AreaData = { bbox, drains: normalize(drainElements), streets, at: Date.now() };
+  await kvSet('areaData', data);
+  return data;
+}
+
+export async function cachedArea(): Promise<AreaData | undefined> {
+  return kvGet('areaData');
+}

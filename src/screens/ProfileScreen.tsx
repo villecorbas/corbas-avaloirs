@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { buildLeaderboard } from '../lib/leaderboard';
+import { LeaderboardScreen } from './LeaderboardScreen';
 import { getConfig } from '../lib/config';
 import { formatDate, formatRelative, t } from '../i18n';
 import { Icon } from '../components/Icon';
@@ -18,7 +20,7 @@ export function useCommune() {
   return commune;
 }
 
-export function ProfileScreen() {
+export function ProfileScreen({ onConnect, onInvite, onShare }: { onConnect: () => void; onInvite: () => void; onShare: () => void }) {
   const progress = useProgress();
   const auth = useAuth();
   const online = useOnline();
@@ -53,7 +55,9 @@ export function ProfileScreen() {
   const lvl = progress.level;
   const unlockedCount = progress.badges.filter((b) => b.unlockedAt).length;
   const myName = auth.osm?.user?.name;
-  const myRank = stats && myName ? stats.leaderboard.findIndex((l) => l.user === myName) + 1 : 0;
+  const monthBoard = useMemo(() => (stats ? buildLeaderboard(stats.drains, { since: Date.now() - 30 * 86_400_000 }) : []), [stats]);
+  const myEntry = myName ? monthBoard.find((e) => e.user === myName) : undefined;
+  const [showBoard, setShowBoard] = useState(false);
   const communeName = commune?.name || cfg.commune.name;
   const target = cfg.commune.estimatedDrains;
 
@@ -86,6 +90,43 @@ export function ProfileScreen() {
         <MiniStat icon="globe" color="var(--green)" value={progress.published} label={t('profile.published')} />
         <MiniStat icon="flame" color="var(--orange)" value={progress.streak} label={t('profile.streakDays', { count: progress.streak })} />
         <MiniStat icon="star" color="var(--yellow)" value={unlockedCount} label={t('profile.badges', { total: progress.badges.length })} />
+      </div>
+
+      <button className="card lb-entry" onClick={() => stats && setShowBoard(true)} disabled={!stats}>
+        <span className="lb-entry-icon" aria-hidden="true">🏆</span>
+        <span style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+          <span className="headline" style={{ display: 'block' }}>{t('leaderboard.title')}</span>
+          <span className="footnote secondary">
+            {!stats
+              ? commune
+                ? t('profile.loadingCommune')
+                : t('profile.communeUnknown')
+              : myEntry
+                ? t(myEntry.rank === 1 ? 'leaderboard.entryFirst' : 'leaderboard.entryRank', { rank: myEntry.rank, total: monthBoard.length })
+                : t('leaderboard.entryCount', { count: monthBoard.length })}
+          </span>
+        </span>
+        <span className="lb-entry-avatars" aria-hidden="true">
+          {monthBoard.slice(0, 3).map((e) => (
+            <span key={e.user} className="lb-avatar" style={{ background: '#5e5ce6' }}>
+              {e.user.slice(0, 1).toUpperCase()}
+            </span>
+          ))}
+        </span>
+        <Icon name="chevron" size={16} className="chev" />
+      </button>
+
+      <div className="social-row">
+        <button className="card social-btn" onClick={onShare}>
+          <span aria-hidden="true">📣</span>
+          <span className="headline">{t('profile.shareScore')}</span>
+          <span className="caption secondary">{t('profile.shareScoreHint')}</span>
+        </button>
+        <button className="card social-btn" onClick={onInvite}>
+          <span aria-hidden="true">🤝</span>
+          <span className="headline">{t('profile.invite')}</span>
+          <span className="caption secondary">{t('profile.inviteHint')}</span>
+        </button>
       </div>
 
       <h3 className="section-title">{t('profile.badgesTitle')}</h3>
@@ -136,35 +177,23 @@ export function ProfileScreen() {
         </div>
       )}
 
-      {stats && stats.leaderboard.length > 0 && (
-        <>
-          <h3 className="section-title">{t('profile.leaderboard')}</h3>
-          <div className="list">
-            {stats.leaderboard.slice(0, 10).map((l, i) => (
-              <div key={l.user} className={`list-row ${l.user === myName ? 'me' : ''}`}>
-                <span className="rank rounded-num">{i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}</span>
-                <span style={{ flex: 1 }} className="ellipsis">
-                  {l.user}
-                  {l.user === myName && <span className="chip accent" style={{ marginLeft: 8 }}>{t('profile.you')}</span>}
-                </span>
-                <span className="value rounded-num">{l.count}</span>
-              </div>
-            ))}
-            {myRank > 10 && (
-              <div className="list-row me">
-                <span className="rank rounded-num">{myRank}</span>
-                <span style={{ flex: 1 }}>{myName}</span>
-                <span className="value rounded-num">{stats.leaderboard[myRank - 1].count}</span>
-              </div>
-            )}
-          </div>
-          <p className="section-footer">{t('profile.leaderboardFooter')}</p>
-        </>
-      )}
       {commune && (
         <button className="btn plain" style={{ marginTop: 8 }} onClick={() => void refresh(commune.insee)} disabled={loading || !online}>
           <Icon name="sync" size={18} /> {t('profile.refresh')}
         </button>
+      )}
+
+      {showBoard && stats && (
+        <LeaderboardScreen
+          stats={stats}
+          communeName={communeName}
+          myName={myName}
+          onClose={() => setShowBoard(false)}
+          onConnect={() => {
+            setShowBoard(false);
+            onConnect();
+          }}
+        />
       )}
 
       <Sheet open={!!badge} onClose={() => setBadge(null)} elevated>

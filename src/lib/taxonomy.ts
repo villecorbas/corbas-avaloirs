@@ -22,6 +22,9 @@ export type DrainType = 'grate' | 'kerb_grate' | 'kerb_opening' | 'channel' | 'g
 export type DrainShape = 'rectangular' | 'square' | 'circular';
 export type DrainMaterial = 'metal' | 'concrete';
 export type TriState = 'yes' | 'no' | 'unknown';
+/** Eau stagnante (question obligatoire) : visible, possible (fond qui retient l'eau) ou non. */
+export type StandingWater = 'yes' | 'possible' | 'no';
+export const STANDING_WATER: StandingWater[] = ['yes', 'possible', 'no'];
 
 /**
  * Publication des caniveaux à grille dans OSM :
@@ -42,7 +45,7 @@ export interface DrainDetails {
 }
 
 export interface Observations {
-  standingWater?: TriState;
+  standingWater?: StandingWater;
   clogged?: TriState;
 }
 
@@ -185,7 +188,7 @@ export function panoramaxSemantics(d: DrainDetails, obs: Observations, hashtags:
   const tags = d.type === 'channel' ? { waterway: 'drainage_gutter', covered: 'yes', ...(d.material ? { material: d.material } : {}) } : osmTags(d);
   for (const [k, v] of Object.entries(tags)) sem.push({ key: `osm|${k}`, value: v });
   for (const h of hashtags) sem.push({ key: 'hashtag', value: h.replace(/^#/, '') });
-  if (obs.standingWater && obs.standingWater !== 'unknown') sem.push({ key: 'avaloirs|standing_water', value: obs.standingWater });
+  if (obs.standingWater) sem.push({ key: 'avaloirs|standing_water', value: obs.standingWater });
   if (obs.clogged && obs.clogged !== 'unknown') sem.push({ key: 'avaloirs|clogged', value: obs.clogged });
   return sem;
 }

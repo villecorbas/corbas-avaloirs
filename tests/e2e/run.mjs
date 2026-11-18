@@ -54,7 +54,23 @@ async function installMocks(context) {
       tags: { waterway: 'drainage_gutter', covered: 'yes' },
       geometry: [{ lat: HOME.latitude - 20 * m, lon: HOME.longitude - 25 * lonM }, { lat: HOME.latitude - 20 * m, lon: HOME.longitude - 21 * lonM }],
     };
-    const elements = body.includes('area') ? [...existing, ...extra, gutter] : [...existing, gutter];
+    // Requête de zone (carte) : avaloirs + rues réelles du quartier (géométrie OSM, prolongée).
+    const street = (id, a, b) => {
+      const [la1, lo1] = a, [la2, lo2] = b;
+      const ext = (t) => ({ lat: la1 + (la2 - la1) * t, lon: lo1 + (lo2 - lo1) * t });
+      return { type: 'way', id, tags: { highway: 'residential' }, geometry: [-6, -3, 0, 1, 4, 7].map(ext) };
+    };
+    const streets = [
+      street(9001, [45.7502401, 4.8417403], [45.7498931, 4.8423235]), // rue du Père Chevrier
+      street(9002, [45.7504439, 4.8449674], [45.7502640, 4.8447044]), // rue Saint-Jérôme
+      street(9003, [45.7517501, 4.8454389], [45.7513506, 4.8449091]), // rue d'Anvers
+    ];
+    const recent = (e, days) => ({ ...e, timestamp: new Date(Date.now() - days * 86_400_000).toISOString() });
+    const elements = body.includes('area')
+      ? [recent(existing[0], 3), existing[1], recent(existing[2], 5), recent(existing[3], 9), ...extra.map((e, i) => recent(e, 1 + i)), recent(gutter, 2)]
+      : body.includes('highway')
+        ? [...existing, gutter, ...streets]
+        : [...existing, gutter];
     await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ elements }) });
   });
 
@@ -211,10 +227,16 @@ async function main() {
     check(await page.getByText('Sur l’écran d’accueil').isVisible(), 'Guide d’installation iOS affiché');
     await page.getByRole('button', { name: 'Plus tard' }).click();
 
-    // 2. Carte
+    // 2. Carte : avaloirs de la zone et rues à explorer
     await page.getByRole('button', { name: 'Ajouter un avaloir' }).waitFor();
+    await page.mouse.move(200, 400);
+    await page.mouse.down();
+    await page.mouse.move(210, 420, { steps: 4 });
+    await page.mouse.up(); // petit déplacement : déclenche le chargement de la zone affichée
     await wait(3500); // tuiles
     await shot('06-carte');
+    check(await page.getByText(/% des rues couvertes ici/).isVisible(), 'Carte : taux de couverture des rues affiché');
+    check(await page.getByText('Rue à explorer').isVisible() && await page.getByText('Sans photo').isVisible(), 'Carte : légende rues à explorer / sans photo');
 
     // 3. Photo
     await page.getByRole('button', { name: 'Ajouter un avaloir' }).click();
@@ -251,7 +273,13 @@ async function main() {
     await page.getByRole('radio', { name: /Grille et bordure/ }).click();
     await page.getByRole('button', { name: 'Rectangle' }).click();
     await page.getByRole('button', { name: 'Fonte / métal' }).click();
-    await page.getByRole('group', { name: 'De l’eau stagnante est-elle visible ?' }).getByRole('button', { name: 'Oui' }).click();
+    // Question obligatoire sur l'eau stagnante : « Continuer » sans réponse est refusé.
+    await page.getByRole('button', { name: 'Continuer' }).click();
+    await wait(700);
+    check(await page.getByText('Répondez à cette question : c’est l’information clé pour la mairie.').isVisible(), 'Eau stagnante : réponse obligatoire');
+    check(await page.getByText('Quel type d’avaloir ?').isVisible(), 'Eau stagnante : impossible de continuer sans répondre');
+    await shot('13a-eau-obligatoire');
+    await page.getByRole('radio', { name: /Oui, visible/ }).click();
     await page.getByRole('group', { name: 'Est-il obstrué (feuilles, déchets) ?' }).getByRole('button', { name: 'Non' }).click();
     await wait(300);
     await shot('13-type-details');
@@ -273,7 +301,21 @@ async function main() {
     await wait(1600);
     await shot('15-reussite');
     check(await page.getByText('Premier pas').isVisible(), 'Badge « Premier pas » débloqué');
+    await page.getByText('Pas encore envoyé à la mairie').scrollIntoViewIfNeeded();
+    await wait(500);
+    check(await page.getByText('Pas encore envoyé à la mairie').isVisible(), 'Rappel : relevé non envoyé sans compte (écran de victoire)');
+    await shot('15b-reussite-non-envoye');
     await page.getByRole('button', { name: 'Terminer' }).click();
+    // Fenêtre de rappel à l'ouverture, puis bandeau sur la carte.
+    await page.getByText('Votre travail attend d’être envoyé').waitFor({ timeout: 8000 });
+    await wait(600);
+    await shot('15c-rappel-connexion');
+    check(await page.getByText('points bloqués').isVisible(), 'Rappel gamifié : points bloqués affichés');
+    await page.getByRole('button', { name: 'Plus tard' }).click();
+    await page.getByText('1 avaloir pas encore envoyé').waitFor();
+    await wait(500);
+    await shot('15d-carte-bandeau');
+    check(true, 'Rappel : bandeau « pas encore envoyé » sur la carte');
 
     // 8. Relevés en attente
     await page.getByRole('button', { name: /Relevés/ }).click();
@@ -345,6 +387,7 @@ async function main() {
     await page.getByRole('button', { name: 'C’est le même : ajouter ma photo' }).click();
     await page.getByText('Quel type d’avaloir ?').waitFor();
     check(await page.getByRole('radio', { name: /Grille au sol/ }).getAttribute('aria-checked') === 'true', 'Type pré-rempli depuis OSM (inlet=grate)');
+    await page.getByRole('radio', { name: /Possible/ }).click();
     await page.getByRole('button', { name: 'Continuer' }).click();
     await page.getByRole('button', { name: /Enregistrer/ }).click();
     await page.getByText('Relever un autre avaloir').waitFor();
@@ -365,6 +408,7 @@ async function main() {
     await page.getByText('Quel type d’avaloir ?').waitFor();
     await page.getByRole('radio', { name: /Caniveau à grille/ }).click();
     await page.getByRole('button', { name: 'Fonte / métal' }).click();
+    await page.getByRole('radio', { name: /Non.*Sec/ }).click();
     check(await page.getByText(/waterway=drainage_gutter \+ covered=yes/).isVisible(), 'Caniveau : explication du schéma OSM affichée');
     check(!(await page.getByText('Forme de la grille').isVisible()), 'Caniveau : pas de question sur la forme');
     await page.getByRole('button', { name: 'Continuer' }).click();
@@ -413,12 +457,37 @@ async function main() {
 
     // 12. Défis
     await page.getByRole('button', { name: 'Défis' }).click();
-    await page.getByText('Classement de la commune').waitFor({ timeout: 15000 });
+    await page.getByText(/sur \d+ ce mois-ci|participants? ce mois-ci/).waitFor({ timeout: 15000 });
     await wait(800);
     await shot('20-defis');
-    await page.getByText('Classement de la commune').scrollIntoViewIfNeeded();
-    await wait(300);
+    await page.getByRole('button', { name: /Classement des participants/ }).click();
+    await page.getByLabel('Podium').waitFor();
+    await wait(900);
     await shot('21-classement');
+    check(await page.getByText('Votre classement').isVisible(), 'Classement : rang du participant affiché');
+    await page.getByRole('button', { name: 'Depuis le début' }).click();
+    await wait(400);
+    check((await page.locator('.podium-step').count()) === 3, 'Classement : podium des 3 premiers');
+    await page.getByRole('button', { name: 'Fermer' }).first().click();
+
+    // 12 bis. Partager son score, inviter ses proches
+    await page.getByRole('button', { name: /Partager mon score/ }).click();
+    await page.locator('.score-card-preview img').waitFor({ timeout: 10000 });
+    await wait(700);
+    await shot('27-partage-score');
+    const fb = await page.getByRole('link', { name: /Facebook/ }).getAttribute('href');
+    check(fb.startsWith('https://www.facebook.com/sharer/sharer.php?u=') && decodeURIComponent(fb).includes('ref=Camille_Avaloirs'), 'Partage : lien Facebook avec lien d’invitation');
+    await page.getByRole('button', { name: 'Fermer' }).first().click();
+    await page.getByRole('button', { name: /Inviter mes proches/ }).click();
+    await page.getByText('Message envoyé').waitFor();
+    await wait(500);
+    await shot('28-invitation');
+    const wa = await page.getByRole('link', { name: /WhatsApp/ }).getAttribute('href');
+    const sms = await page.getByRole('link', { name: /SMS/ }).getAttribute('href');
+    const mail = await page.getByRole('link', { name: /E-mail/ }).getAttribute('href');
+    check(wa.startsWith('https://wa.me/?text=') && sms.startsWith('sms:') && mail.startsWith('mailto:?subject='), 'Invitation : WhatsApp, SMS et e-mail');
+    check(decodeURIComponent(wa).includes('?ref=Camille_Avaloirs'), 'Invitation : lien signé du pseudonyme');
+    await page.getByRole('button', { name: 'Fermer' }).first().click();
 
     // 13. Fiche d'un relevé
     await page.getByRole('button', { name: /Relevés/ }).click();

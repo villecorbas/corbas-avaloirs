@@ -99,11 +99,11 @@ export function ReviewStep({
             </span>
           </div>
         )}
-        {observations.standingWater === 'yes' && (
+        {observations.standingWater && (
           <div className="list-row">
             <Icon name="drop" style={{ color: 'var(--blue)' }} />
             <span>{t('obs.standingWaterShort')}</span>
-            <span className="value">{t('common.yes')}</span>
+            <span className={`value water-value ${observations.standingWater}`}>{t(`water.short.${observations.standingWater}`)}</span>
           </div>
         )}
       </div>

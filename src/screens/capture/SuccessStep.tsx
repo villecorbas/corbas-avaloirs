@@ -3,6 +3,7 @@ import { getConfig } from '../../lib/config';
 import { t } from '../../i18n';
 import { Icon } from '../../components/Icon';
 import { Bar, Confetti, CountUp, Ring } from '../../components/ui';
+import { LockedCard } from '../../components/LockedReminder';
 import type { BadgeState, PointLine, Progress } from '../../lib/gamification';
 import { panoramaxReady } from '../../lib/panoramax';
 import { getOsmAuth } from '../../lib/osm';
@@ -106,13 +107,15 @@ export function SuccessStep({
         </div>
       </div>
 
-      {!connected && (
+      {!getOsmAuth() && after.unsent > 0 ? (
+        <LockedCard count={after.unsent} points={after.lockedPoints} onConnect={onConnect} />
+      ) : !connected ? (
         <button className="card row" style={{ marginTop: 12, width: '100%', textAlign: 'left' }} onClick={onConnect}>
           <Icon name="cloudUp" style={{ color: 'var(--blue)', flex: 'none' }} />
           <span className="footnote" style={{ flex: 1 }}>{t('success.connectHint')}</span>
           <Icon name="chevron" size={16} className="chev" />
         </button>
-      )}
+      ) : null}
 
       </div>
       <div className="success-actions">

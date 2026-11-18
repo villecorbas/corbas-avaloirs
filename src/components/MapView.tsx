@@ -24,15 +24,21 @@ export interface MapMarker {
   id: string;
   lat: number;
   lon: number;
-  kind: 'osm' | 'mine' | 'pending' | 'target';
+  kind: 'osm' | 'osmNoPhoto' | 'mine' | 'pending' | 'target';
   label?: string;
 }
 
 export interface MapLine {
   id: string;
   points: LatLon[];
-  kind: MapMarker['kind'];
+  /** 'todo' / 'covered' : couverture des rues (rues à explorer / déjà couvertes). */
+  kind: MapMarker['kind'] | 'todo' | 'covered';
 }
+
+const COVERAGE_STYLE: Record<'todo' | 'covered', L.PolylineOptions> = {
+  todo: { color: '#ff7a00', weight: 5, opacity: 0.9, dashArray: '2 9', lineCap: 'round', interactive: false },
+  covered: { color: '#34c759', weight: 5, opacity: 0.4, lineCap: 'round', interactive: false },
+};
 
 export interface MapHandle {
   map: () => L.Map | null;
@@ -81,6 +87,7 @@ const LAYERS: Record<BaseLayer, { url: string; options: L.TileLayerOptions }> = 
 
 const STYLE: Record<MapMarker['kind'], L.CircleMarkerOptions> = {
   osm: { radius: 6, color: '#ffffff', weight: 2, fillColor: '#5e5ce6', fillOpacity: 1 },
+  osmNoPhoto: { radius: 6, color: '#5e5ce6', weight: 2.5, fillColor: '#ffffff', fillOpacity: 1 },
   mine: { radius: 8, color: '#ffffff', weight: 2.5, fillColor: '#00a588', fillOpacity: 1 },
   pending: { radius: 8, color: '#ffffff', weight: 2.5, fillColor: '#ff9500', fillOpacity: 1 },
   target: { radius: 10, color: '#ffcc00', weight: 4, fillColor: '#5e5ce6', fillOpacity: 1 },
@@ -166,8 +173,12 @@ export const MapView = forwardRef<MapHandle, Props>(function MapView(props, ref)
     if (!group) return;
     group.clearLayers();
     for (const l of props.lines || []) {
-      const color = STYLE[l.kind].fillColor as string;
       const pts = l.points.map((p) => [p.lat, p.lon] as L.LatLngTuple);
+      if (l.kind === 'todo' || l.kind === 'covered') {
+        L.polyline(pts, COVERAGE_STYLE[l.kind]).addTo(group);
+        continue;
+      }
+      const color = (STYLE[l.kind].fillColor === '#ffffff' ? STYLE[l.kind].color : STYLE[l.kind].fillColor) as string;
       L.polyline(pts, { color: '#ffffff', weight: 9, opacity: 0.9, interactive: false, lineCap: 'round' }).addTo(group);
       L.polyline(pts, { color, weight: 5, opacity: 1, interactive: false, lineCap: 'round' }).addTo(group);
     }
