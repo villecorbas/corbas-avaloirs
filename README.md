@@ -201,7 +201,7 @@ Sur Android, ouvrir l'adresse dans **Chrome** : l'appli propose alors « Install
 ### 5.6 Diffuser
 
 - Affiche ou flyer avec un **QR code** vers l'adresse de l'application (généré dans Réglages › Inviter un voisin).
-- À la première ouverture, l'application explique comment l'ajouter à l'écran d'accueil (instructions iPhone, bouton « Installer » sur Android).
+- **À chaque lancement**, l'application vérifie si elle est ajoutée à l'écran d'accueil ; sinon elle propose l'installation (instructions iPhone, bouton « Installer » sur Android). Un refus reporte la proposition d'un jour (une semaine après 3 refus) ; une fois installée, elle ne la propose plus. Dans le navigateur intégré de WhatsApp, Facebook ou Instagram, où l'installation est impossible, elle invite à ouvrir le lien dans Chrome ou Safari.
 
 ## 6. Exploiter les données dans un SIG
 

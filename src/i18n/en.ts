@@ -599,6 +599,7 @@ const en: Dict = {
     android1: 'Open Chrome’s ⋮ menu, top right',
     android2: 'Choose “Install app” or “Add to Home screen”',
     android3: 'Confirm with “Install”',
+    inApp: 'You are in another app’s built-in browser (WhatsApp, Facebook…). First open this link in Chrome (Android) or Safari (iPhone): ⋮ menu › “Open in browser”.',
     later: 'Later',
   },
 

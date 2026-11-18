@@ -27,7 +27,9 @@ const TABS: { id: Tab; icon: IconName; label: string }[] = [
 ];
 
 const ONBOARDED_KEY = 'avaloirs.onboarded';
-const INSTALL_DISMISSED_KEY = 'avaloirs.installDismissed';
+const INSTALL_SNOOZE_KEY = 'avaloirs.installSnoozeUntil';
+const INSTALL_REFUSALS_KEY = 'avaloirs.installRefusals';
+const DAY = 24 * 3600 * 1000;
 const NUDGE_KEY = 'avaloirs.lastNudge';
 const NUDGE_INTERVAL = 12 * 3600 * 1000;
 
@@ -68,24 +70,49 @@ export function App() {
       /* ignore */
     }
     setOnboarded(true);
-    if (!isStandalone() && !readFlag(INSTALL_DISMISSED_KEY)) setTimeout(() => setInstall(true), 400);
   };
 
+  /**
+   * Au lancement, l'appli vérifie si elle est ajoutée à l'écran d'accueil (mode « standalone »).
+   * Sinon, elle propose l'installation. Un refus reporte la proposition d'un jour (puis d'une
+   * semaine après 3 refus) pour ne pas harceler ; installer l'appli la fait cesser définitivement.
+   */
   const closeInstall = () => {
     try {
-      localStorage.setItem(INSTALL_DISMISSED_KEY, '1');
+      const n = Number(localStorage.getItem(INSTALL_REFUSALS_KEY) || 0) + 1;
+      localStorage.setItem(INSTALL_REFUSALS_KEY, String(n));
+      localStorage.setItem(INSTALL_SNOOZE_KEY, String(Date.now() + (n >= 3 ? 7 * DAY : DAY)));
     } catch {
       /* ignore */
     }
     setInstall(false);
   };
 
+  useEffect(() => {
+    if (!onboarded || isStandalone()) return;
+    let snoozed = 0;
+    try {
+      snoozed = Number(localStorage.getItem(INSTALL_SNOOZE_KEY) || 0);
+    } catch {
+      /* ignore */
+    }
+    if (Date.now() < snoozed) return;
+    const timer = setTimeout(() => setInstall(true), 1200);
+    // Installation réussie depuis Chrome : la proposition disparaît d'elle-même.
+    const done = () => setInstall(false);
+    window.addEventListener('appinstalled', done);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('appinstalled', done);
+    };
+  }, [onboarded]);
+
   // Rappel « travail non envoyé » (au plus toutes les 12 h) pour les contributeurs sans compte.
   const [nudge, setNudge] = useState(false);
   const [social, setSocial] = useState<'invite' | 'share' | null>(null);
   useEffect(() => {
     const check = () => {
-      if (!onboarded || capturing || wizard || !osmConfigured() || getOsmAuth() || progress.unsent === 0) return;
+      if (!onboarded || install || capturing || wizard || !osmConfigured() || getOsmAuth() || progress.unsent === 0) return;
       let last = 0;
       try {
         last = Number(localStorage.getItem(NUDGE_KEY) || 0);
@@ -107,7 +134,7 @@ export function App() {
       clearTimeout(timer);
       document.removeEventListener('visibilitychange', onVis);
     };
-  }, [onboarded, capturing, wizard, progress.unsent]);
+  }, [onboarded, install, capturing, wizard, progress.unsent]);
 
   const openAccounts = useCallback(() => setWizard(true), []);
   const closeWizard = () => {

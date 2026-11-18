@@ -599,6 +599,7 @@ const fr: Dict = {
     android1: 'Ouvrez le menu ⋮ de Chrome, en haut à droite',
     android2: 'Choisissez « Installer l’application » ou « Ajouter à l’écran d’accueil »',
     android3: 'Confirmez avec « Installer »',
+    inApp: 'Vous êtes dans le navigateur d’une autre application (WhatsApp, Facebook…). Ouvrez d’abord ce lien dans Chrome (Android) ou Safari (iPhone) : menu ⋮ › « Ouvrir dans le navigateur ».',
     later: 'Plus tard',
   },
 

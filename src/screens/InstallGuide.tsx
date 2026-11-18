@@ -13,6 +13,10 @@ const listeners = new Set<() => void>();
 
 /** À appeler au démarrage : Android/Chrome propose l'installation via cet événement. */
 export function captureInstallPrompt() {
+  window.addEventListener('appinstalled', () => {
+    deferred = null;
+    listeners.forEach((l) => l());
+  });
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferred = e as BeforeInstallPromptEvent;
@@ -26,6 +30,11 @@ function ShareGlyph() {
       <Icon name="share" size={17} style={{ color: 'var(--blue)' }} />
     </span>
   );
+}
+
+/** Navigateur intégré à une application (WhatsApp/Facebook/Instagram…) : l'installation y est impossible. */
+export function inAppBrowser(): boolean {
+  return /FBAN|FBAV|Instagram|Line\/|MicroMessenger|Snapchat|TikTok|Twitter|LinkedInApp|; wv\)/i.test(navigator.userAgent);
 }
 
 export function InstallGuide({ onDone }: { onDone: () => void }) {
@@ -49,6 +58,12 @@ export function InstallGuide({ onDone }: { onDone: () => void }) {
         </div>
       </div>
 
+      {inAppBrowser() && (
+        <div className="card row" style={{ background: 'color-mix(in srgb, var(--orange) 14%, var(--card))' }}>
+          <Icon name="warning" style={{ color: 'var(--orange)', flex: 'none' }} />
+          <span className="footnote">{t('install.inApp')}</span>
+        </div>
+      )}
       {canPrompt ? (
         <button
           className="btn"
