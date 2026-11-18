@@ -199,12 +199,12 @@ La caméra et le GPS n'étant accessibles qu'en **HTTPS**, l'appli doit être mi
 - **GitHub Pages** (recommandé, adresse stable) : créer un dépôt public, y envoyer ce projet, puis dans *Settings › Pages › Build and deployment*, choisir la source **GitHub Actions**. Le fichier `.github/workflows/deploy-pages.yml` compile, teste et publie l'appli à chaque envoi sur `main`, à l'adresse `https://<compte>.github.io/<dépôt>/`.
 - **Dépôt rapide** : glisser le contenu du dossier `dist/` sur un hébergement statique HTTPS (Netlify Drop, serveur de la ville…).
 
-Sur Android, ouvrir l'adresse dans **Chrome** : l'appli propose alors « Installer ». Sans identifiant OAuth dans `config.js`, tout fonctionne (photo, GPS, type, tracé, points) sauf la publication : les relevés restent « En attente » sur le téléphone.
+Sur Android, ouvrir l'adresse dans le navigateur (Chrome, Samsung Internet…) : l'appli propose alors « Installer ». Sur iPhone, ouvrir l'adresse dans **Safari** (navigateur par défaut). Sans identifiant OAuth dans `config.js`, tout fonctionne (photo, GPS, type, tracé, points) sauf la publication : les relevés restent « En attente » sur le téléphone.
 
 ### 5.6 Diffuser
 
 - Affiche ou flyer avec un **QR code** vers l'adresse de l'application (généré dans Réglages › Inviter un voisin).
-- **À chaque lancement**, l'application vérifie si elle est ajoutée à l'écran d'accueil ; sinon elle propose l'installation (instructions iPhone, bouton « Installer » sur Android). Un refus reporte la proposition d'un jour (une semaine après 3 refus) ; une fois installée, elle ne la propose plus. Dans le navigateur intégré de WhatsApp, Facebook ou Instagram, où l'installation est impossible, elle invite à ouvrir le lien dans Chrome ou Safari.
+- **À chaque lancement**, l'application vérifie si elle est ajoutée à l'écran d'accueil ; sinon elle propose l'installation (instructions iPhone, bouton « Installer » sur Android). Un refus reporte la proposition d'un jour (une semaine après 3 refus) ; une fois installée, elle ne la propose plus. Les consignes s'adaptent à l'appareil et au navigateur : Safari sur iPhone (avec un recours à Safari si l'on est dans Chrome, Firefox ou Edge pour iOS), menu du navigateur sur Android (sans supposer Chrome). Dans le navigateur intégré de WhatsApp, Facebook, Mail ou Instagram, où l'installation est impossible, elle invite à ouvrir le lien dans Safari (iPhone) ou dans le navigateur (Android).
 
 ## 6. Exploiter les données dans un SIG
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { t } from '../i18n';
 import { Icon } from '../components/Icon';
-import { platform } from '../lib/store';
+import { iosBrowser, platform } from '../lib/store';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -34,7 +34,10 @@ function ShareGlyph() {
 
 /** Navigateur intégré à une application (WhatsApp/Facebook/Instagram…) : l'installation y est impossible. */
 export function inAppBrowser(): boolean {
-  return /FBAN|FBAV|Instagram|Line\/|MicroMessenger|Snapchat|TikTok|Twitter|LinkedInApp|; wv\)/i.test(navigator.userAgent);
+  const ua = navigator.userAgent;
+  if (/FBAN|FBAV|Instagram|Line\/|MicroMessenger|Snapchat|TikTok|Twitter|LinkedInApp|; wv\)/i.test(ua)) return true;
+  // iOS : une vue web intégrée (WhatsApp, Mail…) n'annonce pas « Safari/ » dans son identifiant.
+  return platform() === 'ios' && !/Safari\//.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|GSA\//.test(ua);
 }
 
 export function InstallGuide({ onDone }: { onDone: () => void }) {
@@ -47,6 +50,7 @@ export function InstallGuide({ onDone }: { onDone: () => void }) {
     };
   }, []);
   const os = platform();
+  const iosSafari = os === 'ios' && iosBrowser() === 'safari';
 
   return (
     <div className="stack">
@@ -61,7 +65,7 @@ export function InstallGuide({ onDone }: { onDone: () => void }) {
       {inAppBrowser() && (
         <div className="card row" style={{ background: 'color-mix(in srgb, var(--orange) 14%, var(--card))' }}>
           <Icon name="warning" style={{ color: 'var(--orange)', flex: 'none' }} />
-          <span className="footnote">{t('install.inApp')}</span>
+          <span className="footnote">{t(os === 'ios' ? 'install.inAppIos' : 'install.inApp')}</span>
         </div>
       )}
       {canPrompt ? (
@@ -82,7 +86,7 @@ export function InstallGuide({ onDone }: { onDone: () => void }) {
           <li>
             <span className="step-num">1</span>
             <span>
-              {t('install.ios1a')} <ShareGlyph /> {t('install.ios1b')}
+              {t('install.ios1a')} <ShareGlyph /> {t(iosSafari ? 'install.ios1b' : 'install.ios1bOther')}
             </span>
           </li>
           <li>
@@ -110,7 +114,7 @@ export function InstallGuide({ onDone }: { onDone: () => void }) {
           </li>
         </ol>
       )}
-      {os === 'ios' && <p className="footnote secondary" style={{ margin: 0 }}>{t('install.iosSafari')}</p>}
+      {os === 'ios' && !iosSafari && <p className="footnote secondary" style={{ margin: 0 }}>{t('install.iosOther')}</p>}
       <button className="btn plain" onClick={onDone}>
         {t('install.later')}
       </button>

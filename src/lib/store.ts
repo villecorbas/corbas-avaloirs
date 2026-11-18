@@ -90,6 +90,11 @@ export function isStandalone(): boolean {
   );
 }
 
+/** Sur iPhone/iPad : Safari (navigateur par défaut) ou un autre navigateur (Chrome, Firefox, Edge…). */
+export function iosBrowser(): 'safari' | 'other' {
+  return /CriOS|FxiOS|EdgiOS|OPiOS|GSA\//.test(navigator.userAgent) ? 'other' : 'safari';
+}
+
 export function platform(): 'ios' | 'android' | 'other' {
   const ua = navigator.userAgent;
   if (/iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return 'ios';
