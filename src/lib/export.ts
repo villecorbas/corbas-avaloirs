@@ -54,7 +54,11 @@ export function osmDrainsToGeoJSON(drains: OsmDrain[]) {
       const photo = firstPictureId(d.tags);
       return {
         type: 'Feature',
-        geometry: { type: 'Point', coordinates: [round(d.lon), round(d.lat)] },
+        // Un caniveau à grille est une ligne dans OSM : on l'exporte comme telle (longueur réelle dans un SIG).
+        geometry:
+          d.geometry && d.geometry.length > 1
+            ? { type: 'LineString', coordinates: d.geometry.map((p) => [round(p.lon), round(p.lat)]) }
+            : { type: 'Point', coordinates: [round(d.lon), round(d.lat)] },
         properties: {
           osm_type: d.type,
           osm_id: d.id,

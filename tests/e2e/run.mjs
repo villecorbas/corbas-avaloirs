@@ -2,7 +2,7 @@
 // Panoramax simulés. Usage : npm run build && npm run e2e
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { makeFakeCamera } from './fake-camera.mjs';
 
@@ -497,6 +497,19 @@ async function main() {
     await wait(1500);
     await shot('22-fiche-releve');
     await page.keyboard.press('Escape');
+
+    // 13 bis. Couche SIG de la commune : fichier GeoJSON téléchargé et contenu vérifié
+    await page.getByRole('button', { name: 'Réglages' }).click();
+    const dlPromise = page.waitForEvent('download', { timeout: 20000 });
+    await page.getByRole('button', { name: /Couche SIG de la commune/ }).click();
+    const dl = await dlPromise;
+    const geo = JSON.parse(readFileSync(await dl.path(), 'utf8'));
+    check(/^avaloirs_osm_\d+_.*\.geojson$/.test(dl.suggestedFilename()), `Couche SIG : fichier ${dl.suggestedFilename()} téléchargé`);
+    check(geo.type === 'FeatureCollection' && geo.features.length >= 5, `Couche SIG : ${geo.features.length} objets exportés`);
+    check(geo.features.some((f) => f.geometry.type === 'LineString' && f.properties.waterway === 'drainage_gutter' && f.properties.longueur_m > 0), 'Couche SIG : caniveau exporté comme ligne avec sa longueur');
+    check(geo.features.some((f) => f.properties.photo_url), 'Couche SIG : lien vers la photo');
+    await page.getByText(/éléments? exportés?/).waitFor({ timeout: 5000 });
+    check(true, 'Couche SIG : message de confirmation affiché');
 
     // 14. Anglais + mode sombre
     await page.getByRole('button', { name: 'Réglages' }).click();

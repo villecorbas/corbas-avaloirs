@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { APP_VERSION, getConfig, setConfigOverride } from '../lib/config';
-import { LANGS, setLang, t, useLang, type Lang } from '../i18n';
+import { formatRelative, LANGS, setLang, t, useLang, type Lang } from '../i18n';
 import { Icon, type IconName } from '../components/Icon';
 import { Segmented, Sheet, Spinner, toast } from '../components/ui';
 import { download, osmDrainsToGeoJSON, recordsToCSV, recordsToGeoJSON } from '../lib/export';
-import { fetchCommuneStats } from '../lib/overpass';
+import { cachedCommuneStats, fetchCommuneStats } from '../lib/overpass';
 import { isStandalone, useRecords } from '../lib/store';
 import { Accounts } from './Accounts';
 import { InstallGuide } from './InstallGuide';
@@ -46,10 +46,23 @@ export function SettingsScreen({ onInvite }: { onInvite: () => void }) {
     if (!commune) return;
     setExporting(true);
     try {
-      const stats = await fetchCommuneStats(commune.insee);
+      let stats;
+      try {
+        stats = await fetchCommuneStats(commune.insee);
+      } catch {
+        // Serveurs Overpass indisponibles : on se rabat sur les dernières données connues.
+        stats = await cachedCommuneStats(commune.insee);
+        if (!stats) throw new Error('unavailable');
+        toast(t('settings.exportCached', { when: formatRelative(stats.at) }), 'info', 'var(--orange)');
+      }
+      if (!stats.drains.length) {
+        toast(t('settings.exportEmpty'), 'info', 'var(--orange)');
+        return;
+      }
       download(`avaloirs_osm_${commune.insee}_${stamp}.geojson`, JSON.stringify(osmDrainsToGeoJSON(stats.drains)), 'application/geo+json');
+      toast(t('settings.exported', { count: stats.drains.length }), 'check');
     } catch {
-      toast(t('errors.network'), 'warning', 'var(--red)');
+      toast(t('settings.exportFailed'), 'warning', 'var(--red)');
     } finally {
       setExporting(false);
     }
@@ -81,9 +94,17 @@ export function SettingsScreen({ onInvite }: { onInvite: () => void }) {
           color="var(--accent)"
           label={t('settings.exportGeojson')}
           value={String(records.length)}
-          onClick={() => download(`mes_avaloirs_${stamp}.geojson`, JSON.stringify(recordsToGeoJSON(records), null, 1), 'application/geo+json')}
+          onClick={() => {
+            if (!records.length) return toast(t('settings.exportNone'), 'info', 'var(--orange)');
+            download(`mes_avaloirs_${stamp}.geojson`, JSON.stringify(recordsToGeoJSON(records), null, 1), 'application/geo+json');
+            toast(t('settings.exported', { count: records.length }), 'check');
+          }}
         />
-        <Row icon="list" color="var(--green)" label={t('settings.exportCsv')} onClick={() => download(`mes_avaloirs_${stamp}.csv`, recordsToCSV(records), 'text/csv;charset=utf-8')} />
+        <Row icon="list" color="var(--green)" label={t('settings.exportCsv')} onClick={() => {
+            if (!records.length) return toast(t('settings.exportNone'), 'info', 'var(--orange)');
+            download(`mes_avaloirs_${stamp}.csv`, recordsToCSV(records), 'text/csv;charset=utf-8');
+            toast(t('settings.exported', { count: records.length }), 'check');
+          }} />
         {commune && (
           <button className="list-row" onClick={exportCommune} disabled={exporting} style={{ ['--inset' as string]: '57px' }}>
             <span className="icon-tile" style={{ background: 'var(--teal)' }}>

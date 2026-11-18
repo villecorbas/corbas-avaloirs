@@ -115,7 +115,7 @@ export async function fetchCommuneStats(insee: string): Promise<CommuneStats> {
 area["ref:INSEE"="${insee.replace(/[^0-9AB]/gi, '')}"]["boundary"="administrative"]->.a;
 (${DRAIN_FILTER('(area.a)')});
 out meta geom;`;
-  const json = await runOverpass(q, 60000);
+  const json = await runOverpass(q, 40000);
   const drains = normalize(json.elements);
   const byType: Record<string, number> = {};
   const users = new Map<string, number>();
