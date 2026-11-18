@@ -38,7 +38,14 @@ export function useProgress() {
     const id = setInterval(() => setDay(new Date().toDateString()), 60_000);
     return () => clearInterval(id);
   }, []);
-  return useMemo(() => computeProgress(records || []), [records, day]);
+  // Les invitations sont dans localStorage : on recalcule quand l'une est enregistrée.
+  const [inviteVersion, setInviteVersion] = useState(0);
+  useEffect(() => {
+    const bump = () => setInviteVersion((v) => v + 1);
+    window.addEventListener('avaloirs:invites', bump);
+    return () => window.removeEventListener('avaloirs:invites', bump);
+  }, []);
+  return useMemo(() => computeProgress(records || []), [records, day, inviteVersion]);
 }
 
 export function useAuth(): { osm: OsmAuth | null; pnx: PanoramaxAuth | null } {

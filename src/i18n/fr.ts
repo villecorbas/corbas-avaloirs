@@ -274,6 +274,7 @@ const fr: Dict = {
     enrich: 'Complété',
     firstOfDay: '1er du jour',
     streak: 'Série',
+    invited: 'Bienvenue',
   },
 
   success: {
@@ -326,6 +327,8 @@ const fr: Dict = {
     whistleblower: { name: 'Lanceur d’alerte', desc: 'Signaler un avaloir avec de l’eau stagnante.' },
     enricher: { name: 'Complétiste', desc: 'Compléter 5 avaloirs déjà cartographiés.' },
     published: { name: 'Sur la carte !', desc: 'Voir un premier relevé publié sur OpenStreetMap.' },
+    recruiter: { name: 'Recruteur', desc: 'Envoyer 3 invitations.' },
+    ambassador: { name: 'Ambassadeur', desc: 'Envoyer 10 invitations.' },
     marathon: { name: 'Marathon', desc: '20 relevés dans la même journée.' },
   },
 
@@ -394,7 +397,7 @@ const fr: Dict = {
     shareScore: 'Partager mon score',
     shareScoreHint: 'Sur les réseaux sociaux',
     invite: 'Inviter mes proches',
-    inviteHint: 'WhatsApp, SMS, e-mail',
+    inviteHint: 'WhatsApp, SMS · +5 pts chacun',
     communeTitle: 'Objectif collectif · {name}',
     communeTitleGeneric: 'Objectif collectif',
     communeUnknown: 'Votre commune sera détectée lors de votre premier relevé.',
@@ -438,6 +441,13 @@ const fr: Dict = {
 
   invite: {
     title: 'Inviter mes proches',
+    rewardTitle: 'Gagnez +{points} pts par invitation envoyée',
+    rewardText: 'Jusqu’à {daily} invitations récompensées par jour : invitez vos voisins, votre famille, vos amis.',
+    todayLabel: 'Aujourd’hui : {n} sur {max}',
+    total: { zero: 'Aucune invitation récompensée pour l’instant (maximum {max})', one: '{count} invitation récompensée · +{points} pts (maximum {max})', other: '{count} invitations récompensées · +{points} pts (maximum {max})' },
+    earned: '+{points} pts : invitation envoyée 🎉',
+    dailyCap: 'Invitation envoyée ! Maximum de points atteint pour aujourd’hui : revenez demain.',
+    totalCap: 'Invitation envoyée ! Vous avez gagné tous les points d’invitation : merci d’être ambassadeur !',
     intro: 'Plus on est nombreux, plus vite la commune est couverte. Envoyez une invitation en un geste.',
     whatsapp: 'WhatsApp',
     sms: 'SMS',
@@ -468,6 +478,13 @@ const fr: Dict = {
     points: 'points',
     rank: '{rank}e sur {total} ce mois-ci',
     cta: 'Rejoignez la chasse : scannez le code !',
+  },
+
+  inviteCard: {
+    title: 'Déjà 2 avaloirs : bravo ! 🎉',
+    text: 'Chaque voisin qui rejoint la chasse, ce sont des avaloirs de plus relevés pour la commune. Invitez-les et gagnez des points.',
+    perInvite: 'par invitation envoyée',
+    button: 'Inviter mes voisins',
   },
 
   leaderboard: {

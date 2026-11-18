@@ -173,7 +173,7 @@ export function App() {
         ))}
       </nav>
 
-      {capturing && <CaptureFlow onClose={closeCapture} onOpenAccounts={openAccounts} />}
+      {capturing && <CaptureFlow onClose={closeCapture} onOpenAccounts={openAccounts} onOpenInvite={() => setSocial('invite')} />}
 
       {wizard && (
         <div className="wizard-modal" role="dialog" aria-modal="true" aria-label={t('wizard.title')}>

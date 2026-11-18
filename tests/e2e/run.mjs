@@ -404,7 +404,24 @@ async function main() {
     const change2 = state.osmChanges[1] || '';
     check(change2.includes('<modify>') && change2.includes('<node id="7001"') && change2.includes(`version="${state.nodeVersion}"`), 'OSM : modification du nœud existant avec sa version');
     check(change2.includes('k="inlet" v="grate"') && change2.includes(`k="panoramax" v="${state.uploads[1]?.pictureId}"`) && change2.includes('k="check_date"'), 'OSM : photo ajoutée sans écraser les tags existants');
-    await page.getByRole('button', { name: 'Terminer' }).click();
+    // Rappel après le 2e avaloir : inviter ses voisins rapporte des points
+    await page.getByText('Déjà 2 avaloirs : bravo !').scrollIntoViewIfNeeded();
+    await wait(600);
+    await shot('30-rappel-invitation');
+    check(await page.getByText('par invitation envoyée').isVisible(), 'Après le 2e avaloir : rappel « inviter mes voisins » avec +5 pts');
+    await page.getByRole('button', { name: 'Inviter mes voisins' }).click();
+    await page.getByText('Gagnez +5 pts par invitation envoyée').waitFor();
+    await wait(500);
+    await shot('31-invitation-points');
+    const popupP = context.waitForEvent('page', { timeout: 5000 }).catch(() => null);
+    await page.getByRole('link', { name: /WhatsApp/ }).click();
+    (await popupP)?.close().catch(() => undefined);
+    await page.getByText('+5 pts : invitation envoyée').waitFor({ timeout: 5000 });
+    check(true, 'Invitation envoyée : +5 pts annoncés');
+    await wait(700);
+    check(await page.getByText(/1 invitation récompensée · \+5\spts/).isVisible(), 'Invitation : compteur de points mis à jour');
+    check((await page.locator('.reward-dots span.on').count()) === 1, 'Invitation : 1 sur 3 du jour');
+    await page.getByRole('button', { name: 'Fermer' }).first().click();
 
     // 11 bis. Caniveau à grille : tracé sur la photo aérienne → ligne waterway=drainage_gutter
     await context.setGeolocation({ latitude: HOME.latitude + 10 * m, longitude: HOME.longitude + 25 * lonM, accuracy: 3 });

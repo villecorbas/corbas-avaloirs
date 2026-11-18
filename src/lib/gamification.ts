@@ -1,4 +1,5 @@
 import type { DrainRecord } from './db';
+import { INVITE_POINTS, readInvites, wasInvited, WELCOME_POINTS, type InviteEntry } from './inviteLog';
 import type { DrainDetails, Observations } from './taxonomy';
 
 /* ------------------------------------------------------------------------ */
@@ -51,7 +52,7 @@ export function qualityScore(q: QualityInput): { score: number; stars: 1 | 2 | 3
 export const PUBLISH_BONUS = 5;
 
 export interface PointLine {
-  key: 'base' | 'quality' | 'precise' | 'new' | 'enrich' | 'firstOfDay' | 'streak';
+  key: 'base' | 'quality' | 'precise' | 'new' | 'enrich' | 'firstOfDay' | 'streak' | 'invited';
   points: number;
 }
 
@@ -65,6 +66,8 @@ export function recordPoints(
   previous: DrainRecord[],
 ): { total: number; lines: PointLine[] } {
   const lines: PointLine[] = [{ key: 'base', points: 10 }];
+  // Bonus de bienvenue : la personne est arrivée par un lien d'invitation.
+  if (previous.length === 0 && wasInvited()) lines.push({ key: 'invited', points: WELCOME_POINTS });
   const { score } = qualityScore(input);
   lines.push({ key: 'quality', points: Math.round(score / 10) });
   if (input.acc <= 3) lines.push({ key: 'precise', points: 5 });
@@ -119,6 +122,7 @@ interface Stats {
   early: number;
   water: number;
   published: number;
+  invites: number;
   maxPerDay: number;
   perDay: Map<string, number>;
   days: Set<string>;
@@ -148,6 +152,8 @@ export const BADGES: BadgeDef[] = [
   { id: 'whistleblower', icon: '💧', colors: ['#64d2ff', '#30b0c7'], target: 1, value: (s) => s.water },
   { id: 'enricher', icon: '✨', colors: ['#bf5af2', '#ff375f'], target: 5, value: (s) => s.enrich },
   { id: 'published', icon: '🌍', colors: ['#32d74b', '#007aff'], target: 1, value: (s) => s.published },
+  { id: 'recruiter', icon: '🤝', colors: ['#5ac8fa', '#34c759'], target: 3, value: (s) => s.invites },
+  { id: 'ambassador', icon: '📣', colors: ['#ff9f0a', '#ff2d55'], target: 10, value: (s) => s.invites },
   { id: 'marathon', icon: '🏃', colors: ['#ff453a', '#ff9f0a'], target: 20, value: (s) => s.maxPerDay },
 ];
 
@@ -163,6 +169,7 @@ function emptyStats(): Stats {
     early: 0,
     water: 0,
     published: 0,
+    invites: 0,
     maxPerDay: 0,
     perDay: new Map(),
     days: new Set(),
@@ -208,12 +215,15 @@ export interface Progress {
   count: number;
   published: number;
   pending: number;
+  /** Invitations récompensées et points associés. */
+  invites: number;
+  invitePoints: number;
   /** Relevés pas encore publiés sur OSM, et points de publication correspondants « verrouillés ». */
   unsent: number;
   lockedPoints: number;
 }
 
-export function computeProgress(records: DrainRecord[], now = Date.now()): Progress {
+export function computeProgress(records: DrainRecord[], now = Date.now(), invites: InviteEntry[] = readInvites()): Progress {
   const sorted = [...records].sort((a, b) => a.createdAt - b.createdAt);
   const stats = emptyStats();
   const unlocked = new Map<string, number>();
@@ -223,6 +233,15 @@ export function computeProgress(records: DrainRecord[], now = Date.now()): Progr
     points += r.points + (r.bonusAwarded ? PUBLISH_BONUS : 0);
     for (const b of BADGES) {
       if (!unlocked.has(b.id) && b.value(stats) >= b.target) unlocked.set(b.id, r.createdAt);
+    }
+  }
+  // Invitations : points et badges (déblocage à la date de la N-ième invitation).
+  stats.invites = invites.length;
+  const invitePoints = invites.length * INVITE_POINTS;
+  points += invitePoints;
+  for (const b of BADGES) {
+    if ((b.id === 'recruiter' || b.id === 'ambassador') && !unlocked.has(b.id) && b.value(stats) >= b.target) {
+      unlocked.set(b.id, [...invites].sort((x, y) => x.ts - y.ts)[b.target - 1]?.ts ?? now);
     }
   }
   const today = dayKey(now);
@@ -235,6 +254,8 @@ export function computeProgress(records: DrainRecord[], now = Date.now()): Progr
     count: stats.count,
     published: stats.published,
     pending: sorted.filter((r) => needsSync(r)).length,
+    invites: invites.length,
+    invitePoints,
     unsent: sorted.filter((r) => r.sync.osm.status !== 'done' && r.sync.osm.status !== 'skipped').length,
     lockedPoints: sorted.filter((r) => r.sync.osm.status !== 'done' && r.sync.osm.status !== 'skipped').length * PUBLISH_BONUS,
   };

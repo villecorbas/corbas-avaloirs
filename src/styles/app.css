@@ -1650,3 +1650,38 @@
   background: color-mix(in srgb, var(--blue) 10%, var(--card));
   align-items: flex-start;
 }
+
+/* --- Invitations : récompenses ------------------------------------------ */
+.invite-reward,
+.invite-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--blue) 12%, var(--card)), var(--card) 65%);
+}
+.reward-star {
+  font-size: 28px;
+  line-height: 1;
+}
+.reward-star.big {
+  font-size: 34px;
+}
+.reward-dots {
+  display: flex;
+  gap: 8px;
+}
+.reward-dots span {
+  flex: 1;
+  height: 38px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  color: var(--label-2);
+  background: var(--fill);
+  transition: background 0.3s, color 0.3s;
+}
+.reward-dots span.on {
+  color: #fff;
+  background: linear-gradient(135deg, #ffb340, #ff7a00);
+}

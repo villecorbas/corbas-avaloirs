@@ -3,6 +3,7 @@ import { getConfig } from '../lib/config';
 import { t } from '../i18n';
 import { Icon } from '../components/Icon';
 import { Spinner, toast } from '../components/ui';
+import { registerInvite } from '../components/inviteReward';
 import { download } from '../lib/export';
 import { inviteUrl, networkLink, renderScoreCard, type Network } from '../lib/invite';
 import { buildLeaderboard } from '../lib/leaderboard';
@@ -84,7 +85,7 @@ export function ShareScoreScreen({ onClose }: { onClose: () => void }) {
         {canShareFile ? (
           <button
             className="btn"
-            onClick={() => void navigator.share({ files: [file!], text: `${text} ${url}` }).catch(() => undefined)}
+            onClick={() => void navigator.share({ files: [file!], text: `${text} ${url}` }).then(() => registerInvite('score-image')).catch(() => undefined)}
           >
             <Icon name="share" /> {t('share2.shareImage')}
           </button>
@@ -97,7 +98,7 @@ export function ShareScoreScreen({ onClose }: { onClose: () => void }) {
         <h3 className="section-title">{t('share2.networks')}</h3>
         <div className="share-networks">
           {NETWORKS.map((n) => (
-            <a key={n.id} className="share-network" href={networkLink(n.id, text, url)} target="_blank" rel="noopener">
+            <a key={n.id} className="share-network" href={networkLink(n.id, text, url)} target="_blank" rel="noopener" onClick={() => registerInvite(n.id)}>
               <span className="invite-glyph" style={{ background: n.color }} aria-hidden="true">
                 {n.glyph}
               </span>

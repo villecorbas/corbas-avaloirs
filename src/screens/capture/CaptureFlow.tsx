@@ -24,7 +24,7 @@ type Step = 'photo' | 'locate' | 'type' | 'trace' | 'review' | 'success';
 const SHAPES: DrainShape[] = ['rectangular', 'square', 'circular'];
 const MATERIALS: DrainMaterial[] = ['metal', 'concrete'];
 
-export function CaptureFlow({ onClose, onOpenAccounts }: { onClose: () => void; onOpenAccounts: () => void }) {
+export function CaptureFlow({ onClose, onOpenAccounts, onOpenInvite }: { onClose: () => void; onOpenAccounts: () => void; onOpenInvite: () => void }) {
   const records = useRecords() || [];
   const location = useLocation(true); // démarre le GPS dès l'ouverture
   const [step, setStep] = useState<Step>('photo');
@@ -291,6 +291,10 @@ export function CaptureFlow({ onClose, onOpenAccounts }: { onClose: () => void; 
             onConnect={() => {
               close();
               onOpenAccounts();
+            }}
+            onInvite={() => {
+              close();
+              onOpenInvite();
             }}
           />
         )}

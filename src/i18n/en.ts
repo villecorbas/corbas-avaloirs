@@ -274,6 +274,7 @@ const en: Dict = {
     enrich: 'Completed',
     firstOfDay: '1st today',
     streak: 'Streak',
+    invited: 'Welcome',
   },
 
   success: {
@@ -326,6 +327,8 @@ const en: Dict = {
     whistleblower: { name: 'Whistleblower', desc: 'Report a drain with standing water.' },
     enricher: { name: 'Completionist', desc: 'Complete 5 already-mapped drains.' },
     published: { name: 'On the map!', desc: 'Get a first survey published on OpenStreetMap.' },
+    recruiter: { name: 'Recruiter', desc: 'Send 3 invitations.' },
+    ambassador: { name: 'Ambassador', desc: 'Send 10 invitations.' },
     marathon: { name: 'Marathon', desc: '20 surveys in a single day.' },
   },
 
@@ -394,7 +397,7 @@ const en: Dict = {
     shareScore: 'Share my score',
     shareScoreHint: 'On social media',
     invite: 'Invite friends',
-    inviteHint: 'WhatsApp, SMS, email',
+    inviteHint: 'WhatsApp, SMS · +5 pts each',
     communeTitle: 'Team goal · {name}',
     communeTitleGeneric: 'Team goal',
     communeUnknown: 'Your town will be detected with your first survey.',
@@ -438,6 +441,13 @@ const en: Dict = {
 
   invite: {
     title: 'Invite friends',
+    rewardTitle: 'Earn +{points} pts per invitation sent',
+    rewardText: 'Up to {daily} rewarded invitations a day: invite your neighbours, family and friends.',
+    todayLabel: 'Today: {n} of {max}',
+    total: { zero: 'No rewarded invitation yet (maximum {max})', one: '{count} rewarded invitation · +{points} pts (maximum {max})', other: '{count} rewarded invitations · +{points} pts (maximum {max})' },
+    earned: '+{points} pts: invitation sent 🎉',
+    dailyCap: 'Invitation sent! Daily points limit reached: come back tomorrow.',
+    totalCap: 'Invitation sent! You earned all the invitation points: thanks for being an ambassador!',
     intro: 'The more of us, the faster the town is covered. Send an invitation in one tap.',
     whatsapp: 'WhatsApp',
     sms: 'SMS',
@@ -468,6 +478,13 @@ const en: Dict = {
     points: 'points',
     rank: '#{rank} of {total} this month',
     cta: 'Join the hunt: scan the code!',
+  },
+
+  inviteCard: {
+    title: 'Already 2 drains: well done! 🎉',
+    text: 'Every neighbour who joins means more drains surveyed for the town. Invite them and earn points.',
+    perInvite: 'per invitation sent',
+    button: 'Invite my neighbours',
   },
 
   leaderboard: {
