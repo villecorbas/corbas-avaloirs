@@ -63,8 +63,14 @@ export function osmConfigured(): boolean {
   return !!osmUrls().clientId;
 }
 
-/** Redirige vers openstreetmap.org (même fenêtre : indispensable pour les PWA iOS). */
-export async function startOsmLogin() {
+/**
+ * Redirige vers openstreetmap.org (même fenêtre : indispensable pour les PWA iOS).
+ * Avec `signup`, ouvre la page d'inscription : le site OSM y conserve l'adresse
+ * d'autorisation (paramètre `referer`) et, une fois le compte créé et l'e-mail
+ * confirmé, sa page d'accueil propose « Continuer l'autorisation », qui ramène
+ * directement dans l'application, connectée.
+ */
+export async function startOsmLogin(opts: { signup?: boolean } = {}) {
   const { web, clientId } = osmUrls();
   if (!clientId) throw new Error('osm_not_configured');
   const pending: Pending = {
@@ -84,7 +90,15 @@ export async function startOsmLogin() {
     code_challenge: await pkceChallenge(pending.verifier),
     code_challenge_method: 'S256',
   });
-  window.location.assign(`${web}/oauth2/authorize?${params}`);
+  const authorizePath = `/oauth2/authorize?${params}`;
+  window.location.assign(
+    opts.signup ? `${web}/user/new?${new URLSearchParams({ referer: authorizePath })}` : `${web}${authorizePath}`,
+  );
+}
+
+/** Page d'inscription simple (quand l'application n'est pas encore enregistrée auprès d'OSM). */
+export function osmSignupUrl(): string {
+  return `${osmUrls().web}/user/new`;
 }
 
 export function hasPendingLogin(): boolean {

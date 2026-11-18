@@ -8,16 +8,17 @@ import {
   hasPendingLogin,
   osmConfigured,
   osmLogout,
+  osmSignupUrl,
   refreshOsmUser,
   startOsmLogin,
 } from '../lib/osm';
 import {
   acceptPanoramaxTos,
   checkPanoramaxUser,
+  openPanoramaxClaim,
   panoramaxLogout,
-  startPanoramaxLogin,
 } from '../lib/panoramax';
-import { useAuth } from '../lib/store';
+import { useAuth, usePanoramaxClaimPolling } from '../lib/store';
 
 /** Section « Comptes » : OpenStreetMap (OAuth 2) puis Panoramax (jeton réclamé). */
 export function Accounts() {
@@ -35,22 +36,12 @@ export function Accounts() {
   }, []);
 
   // En attente de réclamation du jeton Panoramax : on vérifie régulièrement.
-  useEffect(() => {
-    if (!pnxPending) return;
-    const check = () => void checkPanoramaxUser().then((a) => a?.user && toast(t('accounts.pnxConnected'), 'check'));
-    const id = setInterval(check, 3000);
-    const onVis = () => document.visibilityState === 'visible' && check();
-    document.addEventListener('visibilitychange', onVis);
-    return () => {
-      clearInterval(id);
-      document.removeEventListener('visibilitychange', onVis);
-    };
-  }, [pnxPending]);
+  usePanoramaxClaimPolling(pnxPending, () => toast(t('accounts.pnxConnected'), 'check'));
 
-  const connectOsm = async () => {
+  const connectOsm = async (signup = false) => {
     setBusy('osm');
     try {
-      await startOsmLogin();
+      await startOsmLogin({ signup });
     } catch {
       setBusy(null);
       toast(t('errors.network'), 'warning', 'var(--red)');
@@ -59,14 +50,9 @@ export function Accounts() {
 
   const connectPnx = async () => {
     setBusy('pnx');
-    // La fenêtre doit être ouverte pendant le geste (sinon bloquée par Safari).
-    const win = window.open('about:blank', '_blank');
     try {
-      const a = await startPanoramaxLogin();
-      if (win) win.location.href = a.claimUrl;
-      else window.open(a.claimUrl, '_blank');
+      await openPanoramaxClaim();
     } catch {
-      win?.close();
       toast(t('errors.network'), 'warning', 'var(--red)');
     } finally {
       setBusy(null);
@@ -100,13 +86,19 @@ export function Accounts() {
               </button>
             ) : (
               <>
-                <button className="btn" onClick={connectOsm} disabled={!osmConfigured() || busy === 'osm'}>
+                <button className="btn" onClick={() => connectOsm(false)} disabled={!osmConfigured() || busy === 'osm'}>
                   {busy === 'osm' ? <Spinner /> : null}
                   {t('accounts.osmConnect')}
                 </button>
-                <a className="footnote" href={`${osmUrls().web}/user/new`} target="_blank" rel="noopener">
-                  {t('accounts.osmCreate')}
-                </a>
+                {osmConfigured() ? (
+                  <button className="footnote" style={{ color: 'var(--accent)', textAlign: 'left' }} onClick={() => connectOsm(true)}>
+                    {t('accounts.osmCreate')}
+                  </button>
+                ) : (
+                  <a className="footnote" href={osmSignupUrl()} target="_blank" rel="noopener">
+                    {t('accounts.osmCreate')}
+                  </a>
+                )}
               </>
             )}
             {pendingOsm && (

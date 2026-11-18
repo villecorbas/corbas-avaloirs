@@ -43,7 +43,12 @@ Pile : React 19 + TypeScript, Vite, Leaflet, service worker maison (sans dépend
 4. **Récapitulatif** — adresse, précision, score qualité détaillé, aperçu exact des tags OSM.
 5. **Célébration** — points gagnés, badges, objectif du jour, puis « Relever un autre avaloir » en un geste.
 
-Les comptes ne sont **pas** demandés au départ : on peut contribuer tout de suite, la connexion n'est proposée que pour publier.
+**Compte de contributeur.** À la première utilisation, après les autorisations, un assistant guide la création ou la connexion du compte :
+- « **Créer mon compte gratuit** » explique les 3 étapes (pseudonyme public, confirmation de l'e-mail, « Continuer l'autorisation » puis « Autoriser ») et ouvre la page d'inscription d'OpenStreetMap avec, en paramètre de retour, la demande d'autorisation de l'appli : une fois le compte créé, OSM ramène directement dans l'application, connectée (inscription possible aussi via Google, Apple, Microsoft, Facebook ou GitHub) ;
+- « **J'ai déjà un compte OpenStreetMap** » lance directement la connexion ;
+- puis « **Autoriser la publication des photos** » relie Panoramax avec le même compte, et « Tout est prêt ! » conclut.
+
+L'assistant reprend là où il en était après chaque aller-retour sur openstreetmap.org. « Plus tard » reste possible : les relevés sont gardés sur le téléphone, et l'assistant est reproposé à chaque invitation « Connecter mes comptes » (carte, relevés, écran de victoire).
 
 Captures d'écran : [`docs/screenshots/`](docs/screenshots/).
 

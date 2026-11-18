@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { allRecords, onRecordsChange, type DrainRecord } from './db';
 import { computeProgress } from './gamification';
 import { getOsmAuth, type OsmAuth } from './osm';
-import { getPanoramaxAuth, type PanoramaxAuth } from './panoramax';
+import { checkPanoramaxUser, getPanoramaxAuth, type PanoramaxAuth } from './panoramax';
 
 let recordsCache: DrainRecord[] | null = null;
 const recordListeners = new Set<(r: DrainRecord[]) => void>();
@@ -45,11 +45,16 @@ export function useAuth(): { osm: OsmAuth | null; pnx: PanoramaxAuth | null } {
   const [state, setState] = useState(() => ({ osm: getOsmAuth(), pnx: getPanoramaxAuth() }));
   useEffect(() => {
     const update = () => setState({ osm: getOsmAuth(), pnx: getPanoramaxAuth() });
+    const onVisible = () => document.visibilityState === 'visible' && update();
     window.addEventListener('avaloirs:auth', update);
     window.addEventListener('storage', update);
+    window.addEventListener('focus', update);
+    document.addEventListener('visibilitychange', onVisible);
     return () => {
       window.removeEventListener('avaloirs:auth', update);
       window.removeEventListener('storage', update);
+      window.removeEventListener('focus', update);
+      document.removeEventListener('visibilitychange', onVisible);
     };
   }, []);
   return state;
@@ -83,4 +88,22 @@ export function platform(): 'ios' | 'android' | 'other' {
   if (/iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return 'ios';
   if (/Android/.test(ua)) return 'android';
   return 'other';
+}
+
+/** Tant qu'une connexion Panoramax est en attente, vérifie régulièrement si elle a abouti. */
+export function usePanoramaxClaimPolling(active: boolean, onConnected?: () => void) {
+  useEffect(() => {
+    if (!active) return;
+    const check = () => void checkPanoramaxUser().then((a) => a?.user && onConnected?.());
+    const id = setInterval(check, 3000);
+    const onVis = () => document.visibilityState === 'visible' && check();
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('focus', check);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('focus', check);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active]);
 }

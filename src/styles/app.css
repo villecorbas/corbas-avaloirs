@@ -1123,3 +1123,91 @@
     padding-right: max(16px, calc((100% - 640px) / 2));
   }
 }
+
+/* --- Assistant de compte ------------------------------------------------- */
+.wizard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.wizard-progress {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.wizard-progress span {
+  width: 28px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--fill-2);
+  transition: background 0.3s;
+}
+.wizard-progress span.on {
+  background: var(--accent);
+}
+.wizard-art {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 4px;
+  border-radius: 26px;
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+  background: var(--accent-tint);
+  animation: pop 0.55s var(--spring) both;
+}
+.wizard-art-badge {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: #7ebc6f;
+  border: 3px solid var(--bg);
+}
+.wizard-benefits {
+  list-style: none;
+  margin: 2px 0;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  background: var(--card);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 15px;
+}
+.wizard-benefits li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.wizard-benefits li > svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--green);
+}
+.wizard-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  overflow-y: auto;
+  padding: calc(var(--sat) + 56px) calc(20px + var(--sar)) calc(var(--sab) + 24px) calc(20px + var(--sal));
+  background: radial-gradient(140% 60% at 50% 0%, var(--accent-tint), transparent 65%), var(--bg);
+  animation: sheet-up 0.45s var(--spring);
+}
+.wizard-modal .wizard {
+  max-width: 480px;
+  margin: 0 auto;
+}
+.wizard-close {
+  position: fixed;
+  z-index: 1301;
+  top: calc(var(--sat) + 10px);
+  right: calc(12px + var(--sar));
+}

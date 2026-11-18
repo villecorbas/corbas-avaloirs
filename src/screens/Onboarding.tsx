@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { getConfig } from '../lib/config';
 import { t } from '../i18n';
 import { Icon } from '../components/Icon';
@@ -6,16 +6,43 @@ import { haptic, Ring } from '../components/ui';
 import { DrainIllustration } from '../components/DrainIllustration';
 import { enableCompass, requestLocationPermission } from '../lib/location';
 import { platform } from '../lib/store';
+import { AccountWizard } from './AccountWizard';
+
+const PAGE_KEY = 'avaloirs.onboardingPage';
+const PAGES = 5;
+const PERMISSIONS_PAGE = 3;
+const ACCOUNT_PAGE = 4;
+
+function savedPage(): number {
+  try {
+    const n = Number(localStorage.getItem(PAGE_KEY));
+    return Number.isInteger(n) && n > 0 && n < PAGES ? n : 0;
+  } catch {
+    return 0;
+  }
+}
 
 type Perm = 'idle' | 'granted' | 'denied';
 
 export function Onboarding({ onDone }: { onDone: () => void }) {
-  const [page, setPage] = useState(0);
+  // Reprend à la bonne page au retour d'openstreetmap.org (la page est rechargée).
+  const [page, setPage] = useState(savedPage);
   const scroller = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = scroller.current;
+    if (el && page) el.scrollTo({ left: page * el.clientWidth });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    try {
+      localStorage.setItem(PAGE_KEY, String(page));
+    } catch {
+      /* ignore */
+    }
+  }, [page]);
   const [geo, setGeo] = useState<Perm>('idle');
   const [cam, setCam] = useState<Perm>('idle');
   const [compass, setCompass] = useState<Perm>('idle');
-  const pages = 4;
 
   const goTo = (i: number) => {
     const el = scroller.current;
@@ -35,11 +62,23 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
 
   const needsCompassPermission = platform() === 'ios';
 
+  const finish = () => {
+    if (!needsCompassPermission) void enableCompass();
+    try {
+      localStorage.removeItem(PAGE_KEY);
+    } catch {
+      /* ignore */
+    }
+    onDone();
+  };
+
   return (
     <div className="onboarding">
-      <button className="btn plain onboarding-skip" onClick={onDone}>
-        {t('onboarding.skip')}
-      </button>
+      {page < PERMISSIONS_PAGE && (
+        <button className="btn plain onboarding-skip" onClick={() => goTo(PERMISSIONS_PAGE)}>
+          {t('onboarding.skip')}
+        </button>
+      )}
       <div
         className="onboarding-pages"
         ref={scroller}
@@ -131,27 +170,29 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
           </div>
           <p className="footnote secondary center" style={{ marginTop: 14 }}>{t('onboarding.privacy')}</p>
         </section>
+
+        <section className="onboarding-page" aria-label={t('wizard.title')}>
+          {page >= PERMISSIONS_PAGE && <AccountWizard onDone={finish} doneLabel={t('onboarding.start')} />}
+        </section>
       </div>
 
       <div className="onboarding-footer">
         <div className="dots" role="tablist">
-          {Array.from({ length: pages }, (_, i) => (
+          {Array.from({ length: PAGES }, (_, i) => (
             <button key={i} className={i === page ? 'on' : ''} onClick={() => goTo(i)} aria-label={t('onboarding.page', { n: i + 1 })} />
           ))}
         </div>
-        <button
-          className="btn"
-          onClick={() => {
-            haptic();
-            if (page < pages - 1) goTo(page + 1);
-            else {
-              if (!needsCompassPermission) void enableCompass();
-              onDone();
-            }
-          }}
-        >
-          {page < pages - 1 ? t('common.continue') : t('onboarding.start')}
-        </button>
+        {page < ACCOUNT_PAGE && (
+          <button
+            className="btn"
+            onClick={() => {
+              haptic();
+              goTo(page + 1);
+            }}
+          >
+            {t('common.continue')}
+          </button>
+        )}
       </div>
     </div>
   );

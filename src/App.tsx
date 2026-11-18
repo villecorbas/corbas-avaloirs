@@ -12,6 +12,7 @@ import { ProfileScreen } from './screens/ProfileScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { Onboarding } from './screens/Onboarding';
 import { InstallGuide } from './screens/InstallGuide';
+import { AccountWizard, markWizardResume, shouldResumeWizard } from './screens/AccountWizard';
 
 type Tab = 'map' | 'records' | 'profile' | 'settings';
 const TABS: { id: Tab; icon: IconName; label: string }[] = [
@@ -39,13 +40,15 @@ export function App() {
   const [onboarded, setOnboarded] = useState(() => readFlag(ONBOARDED_KEY));
   const [install, setInstall] = useState(false);
   const [orphanCode, setOrphanCode] = useState<string | null>(null);
+  // Assistant de compte, rouvert automatiquement au retour d'openstreetmap.org.
+  const [wizard, setWizard] = useState(() => readFlag(ONBOARDED_KEY) && shouldResumeWizard());
   const progress = useProgress();
 
   useEffect(() => {
     void handleOsmCallback().then((r: CallbackResult) => {
       if (r.kind === 'success') {
         toast(t('accounts.osmConnected'), 'check');
-        setTab('settings');
+        if (!shouldResumeWizard()) setTab('settings');
       } else if (r.kind === 'orphan') setOrphanCode(r.code);
       else if (r.kind === 'error') toast(t('accounts.osmError'), 'warning', 'var(--red)');
     });
@@ -71,7 +74,11 @@ export function App() {
     setInstall(false);
   };
 
-  const openAccounts = useCallback(() => setTab('settings'), []);
+  const openAccounts = useCallback(() => setWizard(true), []);
+  const closeWizard = () => {
+    markWizardResume(false);
+    setWizard(false);
+  };
   const closeCapture = useCallback(() => setCapturing(false), []);
 
   if (orphanCode) return <OrphanCode code={orphanCode} onClose={() => setOrphanCode(null)} />;
@@ -97,6 +104,15 @@ export function App() {
       </nav>
 
       {capturing && <CaptureFlow onClose={closeCapture} onOpenAccounts={openAccounts} />}
+
+      {wizard && (
+        <div className="wizard-modal" role="dialog" aria-modal="true" aria-label={t('wizard.title')}>
+          <button className="icon-btn wizard-close" onClick={closeWizard} aria-label={t('common.close')}>
+            <Icon name="close" stroke={2.4} />
+          </button>
+          <AccountWizard onDone={closeWizard} doneLabel={t('wizard.done')} />
+        </div>
+      )}
 
       <Sheet open={install} onClose={closeInstall} title={t('install.title')} elevated>
         <InstallGuide onDone={closeInstall} />

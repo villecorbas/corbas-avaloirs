@@ -74,6 +74,23 @@ export async function startPanoramaxLogin(): Promise<PanoramaxAuth> {
   return auth;
 }
 
+/**
+ * Ouvre la page de validation Panoramax dans un nouvel onglet. L'onglet est ouvert
+ * pendant le geste de l'utilisateur (sinon bloqué par Safari), puis dirigé vers
+ * la page une fois le jeton obtenu.
+ */
+export async function openPanoramaxClaim(): Promise<void> {
+  const win = window.open('about:blank', '_blank');
+  try {
+    const a = await startPanoramaxLogin();
+    if (win) win.location.href = a.claimUrl;
+    else window.open(a.claimUrl, '_blank');
+  } catch (e) {
+    win?.close();
+    throw e;
+  }
+}
+
 /** Vérifie si le jeton a été réclamé ; renvoie l'utilisateur, ou null s'il est en attente. */
 export async function checkPanoramaxUser(): Promise<PanoramaxAuth | null> {
   const auth = getPanoramaxAuth();

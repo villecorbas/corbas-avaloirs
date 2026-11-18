@@ -64,6 +64,14 @@ async function installMocks(context) {
     state.authorize = Object.fromEntries(u.searchParams);
     route.fulfill({ status: 302, headers: { location: `${u.searchParams.get('redirect_uri')}?code=E2E-CODE&state=${u.searchParams.get('state')}` } });
   });
+  await context.route('https://www.openstreetmap.org/user/new?**', (route) => {
+    state.signupReferer = new URL(route.request().url()).searchParams.get('referer');
+    // Simule l'inscription puis le clic sur « Continuer l'autorisation » de la page d'accueil OSM.
+    route.fulfill({
+      contentType: 'text/html',
+      body: `<p>Bienvenue !</p><script>setTimeout(() => location.href = ${JSON.stringify('https://www.openstreetmap.org' + state.signupReferer)}, 300)</script>`,
+    });
+  });
   await context.route('https://www.openstreetmap.org/oauth2/token', (route) => {
     state.tokenRequest = Object.fromEntries(new URLSearchParams(route.request().postData()));
     route.fulfill({ contentType: 'application/json', body: JSON.stringify({ access_token: 'osm-e2e-token', token_type: 'Bearer', scope: 'read_prefs write_api' }) });
@@ -190,7 +198,13 @@ async function main() {
     await page.getByRole('button', { name: 'Autoriser' }).first().click();
     await wait(600);
     await shot('04-accueil-autorisations');
-    await page.getByRole('button', { name: 'C’est parti !' }).click();
+    await page.getByRole('button', { name: 'Continuer' }).click();
+    await page.getByText('Votre compte de contributeur').waitFor();
+    await wait(900);
+    await shot('04b-accueil-compte');
+    check(await page.getByRole('button', { name: 'Créer mon compte gratuit' }).isVisible(), 'Accueil : invitation à créer un compte OSM');
+    check(await page.getByRole('button', { name: 'J’ai déjà un compte OpenStreetMap' }).isVisible(), 'Accueil : connexion avec un compte existant');
+    await page.getByRole('button', { name: 'Plus tard' }).click();
     await page.getByText('Installer l’application').waitFor();
     await wait(600);
     await shot('05-installation');
@@ -267,21 +281,33 @@ async function main() {
     await wait(500);
     await shot('16-releves-attente');
 
-    // 9. Connexion OSM (OAuth 2 PKCE simulé) puis Panoramax (jeton réclamé)
+    // 9. Assistant de compte : création d'un compte OSM (inscription simulée) puis Panoramax
     await page.getByRole('button', { name: 'Connecter mes comptes' }).click();
-    await page.getByRole('button', { name: 'Se connecter avec OpenStreetMap' }).click();
-    await page.getByText('Connecté en tant que Camille_Avaloirs').first().waitFor({ timeout: 15000 });
+    await page.getByText('Votre compte de contributeur').waitFor();
+    await page.getByRole('button', { name: 'Créer mon compte gratuit' }).click();
+    await page.getByText('Votre compte en 3 étapes').waitFor();
+    await wait(500);
+    await shot('17a-compte-inscription');
+    await page.getByRole('button', { name: 'Ouvrir la page d’inscription' }).click();
+    // Retour d'openstreetmap.org : la page est rechargée, l'assistant doit reprendre à l'étape « photos ».
+    await page.getByText('Dernière étape : vos photos').waitFor({ timeout: 20000 });
+    check(state.signupReferer?.startsWith('/oauth2/authorize?') && state.signupReferer.includes('client_id=e2e-client') && state.signupReferer.includes('code_challenge='), 'Inscription OSM : autorisation OAuth conservée en paramètre de retour');
     check(state.authorize?.code_challenge_method === 'S256' && state.authorize?.scope === 'read_prefs write_api', 'OAuth : PKCE S256 et scopes corrects');
     check(state.tokenRequest?.code === 'E2E-CODE' && (state.tokenRequest?.code_verifier || '').length >= 43, 'OAuth : échange du code avec le vérificateur PKCE');
+    check(await page.getByText('Connecté en tant que Camille_Avaloirs').isVisible(), 'Assistant repris après la redirection, compte connecté');
+    await wait(500);
+    await shot('17b-compte-photos');
     const popupPromise = context.waitForEvent('page');
-    await page.getByRole('button', { name: 'Connecter Panoramax' }).click();
+    await page.getByRole('button', { name: 'Autoriser la publication des photos' }).click();
     const popup = await popupPromise;
     await popup.waitForLoadState().catch(() => undefined);
-    await wait(800);
-    await shot('17-reglages-connexion');
+    await wait(500);
     await popup.close().catch(() => undefined);
-    await page.getByText('Panoramax connecté').waitFor({ timeout: 15000 });
+    await page.getByText('Tout est prêt !').waitFor({ timeout: 15000 });
     check(state.claimed, 'Panoramax : jeton réclamé via la page de connexion');
+    await wait(900);
+    await shot('17c-compte-pret');
+    await page.getByRole('button', { name: 'Terminé' }).click();
 
     // 10. Synchronisation automatique
     await page.waitForFunction(() => true);
