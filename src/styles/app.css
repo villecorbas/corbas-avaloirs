@@ -26,6 +26,7 @@
   --ill-metal-dark: #34373b;
   --ill-hole: #121315;
   --ill-water: #64d2ff;
+  --ill-soil: #8a7560;
   width: 100%;
   height: auto;
   display: block;
@@ -43,6 +44,7 @@
     --ill-metal: #7d8186;
     --ill-metal-dark: #5a5e63;
     --ill-hole: #0b0b0c;
+    --ill-soil: #4a3f33;
   }
 }
 
@@ -1684,4 +1686,51 @@
 .reward-dots span.on {
   color: #fff;
   background: linear-gradient(135deg, #ffb340, #ff7a00);
+}
+
+/* --- Introduction : moustique, avaloir, eau stagnante -------------------- */
+.art-circle.plain {
+  display: grid;
+  place-items: center;
+  background: var(--accent-tint);
+  overflow: visible;
+}
+.mosquito.huge {
+  position: static;
+  width: 150px;
+  height: 150px;
+  animation: pop 0.6s 0.1s var(--spring) both;
+}
+.variety {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 6px 0 10px;
+}
+.variety figure {
+  margin: 0;
+  text-align: center;
+}
+.variety-img {
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.variety figcaption {
+  margin-top: 6px;
+  line-height: 14px;
+  color: var(--label-2);
+}
+.cutaway-wrap {
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: var(--shadow-strong);
+  margin: 6px 0 10px;
+}
+.cutaway {
+  display: block;
+}
+.mission {
+  font-weight: 700;
+  color: var(--accent);
 }

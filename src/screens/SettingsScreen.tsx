@@ -8,6 +8,7 @@ import { cachedCommuneStats, fetchCommuneStats } from '../lib/overpass';
 import { isStandalone, useRecords } from '../lib/store';
 import { Accounts } from './Accounts';
 import { InstallGuide } from './InstallGuide';
+import { ExplainDrain, ExplainMosquito, ExplainWater } from './Explainer';
 import { useCommune } from './ProfileScreen';
 
 function Row({ icon, color, label, value, onClick, href }: { icon: IconName; color: string; label: string; value?: string; onClick?: () => void; href?: string }) {
@@ -36,7 +37,7 @@ export function SettingsScreen({ onInvite }: { onInvite: () => void }) {
   const lang = useLang();
   const records = useRecords() || [];
   const commune = useCommune();
-  const [sheet, setSheet] = useState<'install' | 'about' | null>(null);
+  const [sheet, setSheet] = useState<'install' | 'about' | 'explain' | null>(null);
   const [exporting, setExporting] = useState(false);
   const cfg = getConfig();
   const dev = cfg.openstreetmap.environment === 'dev';
@@ -138,6 +139,7 @@ export function SettingsScreen({ onInvite }: { onInvite: () => void }) {
 
       <h3 className="section-title">{t('settings.about')}</h3>
       <div className="list">
+        <Row icon="drop" color="var(--blue)" label={t('explain.open')} onClick={() => setSheet('explain')} />
         <Row icon="info" color="var(--label-2)" label={t('settings.aboutApp')} value={`v${APP_VERSION}`} onClick={() => setSheet('about')} />
         <Row icon="map" color="#7ebc6f" label={t('settings.osmWiki')} href="https://wiki.openstreetmap.org/wiki/FR:Key:inlet" />
         <Row icon="photo" color="#c6a96b" label="Panoramax" href="https://panoramax.fr" />
@@ -145,6 +147,13 @@ export function SettingsScreen({ onInvite }: { onInvite: () => void }) {
 
       <Sheet open={sheet === 'install'} onClose={() => setSheet(null)} title={t('install.title')} elevated>
         <InstallGuide onDone={() => setSheet(null)} />
+      </Sheet>
+      <Sheet open={sheet === 'explain'} onClose={() => setSheet(null)} title={t('explain.title')} elevated>
+        <div className="stack" style={{ gap: 18 }}>
+          <ExplainMosquito />
+          <ExplainDrain />
+          <ExplainWater />
+        </div>
       </Sheet>
       <Sheet open={sheet === 'about'} onClose={() => setSheet(null)} title={t('settings.aboutApp')} elevated>
         <div className="stack subhead">

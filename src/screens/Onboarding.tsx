@@ -3,14 +3,14 @@ import { getConfig } from '../lib/config';
 import { t } from '../i18n';
 import { Icon } from '../components/Icon';
 import { haptic, Ring } from '../components/ui';
-import { DrainIllustration } from '../components/DrainIllustration';
 import { enableCompass, requestLocationPermission } from '../lib/location';
 import { platform } from '../lib/store';
 import { invitedBy } from '../lib/invite';
+import { ExplainDrain, ExplainMosquito, ExplainWater } from './Explainer';
 
 const PAGE_KEY = 'avaloirs.onboardingPage';
-const PAGES = 4;
-const PERMISSIONS_PAGE = 3; // dernière page : le compte OpenStreetMap n'est demandé qu'après le premier avaloir relevé
+const PAGES = 6;
+const PERMISSIONS_PAGE = 5; // dernière page : le compte OpenStreetMap n'est demandé qu'après le premier avaloir relevé
 
 function savedPage(): number {
   try {
@@ -88,20 +88,21 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
         }}
       >
         <section className="onboarding-page">
-          <div className="onboarding-art">
-            <div className="art-circle">
-              <DrainIllustration type="kerb_grate" className="art-drain" />
-              <MosquitoBadge />
-            </div>
-          </div>
           {invitedBy() && (
             <div className="center">
               <span className="chip accent pop">🎉 {t('onboarding.invitedBy', { name: invitedBy()! })}</span>
             </div>
           )}
-          <h1 className="title1 center">{t('onboarding.p1Title')}</h1>
-          <p className="subhead secondary center">{t('onboarding.p1Text')}</p>
+          <ExplainMosquito />
           <p className="footnote secondary center">{getConfig().campaignName}</p>
+        </section>
+
+        <section className="onboarding-page">
+          <ExplainDrain />
+        </section>
+
+        <section className="onboarding-page">
+          <ExplainWater />
         </section>
 
         <section className="onboarding-page">
@@ -217,26 +218,5 @@ function PermRow({ icon, color, title, text, state, onAsk }: { icon: 'location' 
         </button>
       )}
     </div>
-  );
-}
-
-/** Moustique tigre stylisé (noir rayé de blanc), barré. */
-function MosquitoBadge() {
-  return (
-    <svg className="mosquito" viewBox="0 0 80 80" aria-hidden="true">
-      <circle cx="40" cy="40" r="38" fill="#fff" stroke="#ff3b30" strokeWidth="5" />
-      <g transform="translate(40 41) rotate(-20)">
-        <ellipse cx="-9" cy="-12" rx="13" ry="5" fill="#cfe7ff" opacity=".9" transform="rotate(-25)" />
-        <ellipse cx="9" cy="-12" rx="13" ry="5" fill="#cfe7ff" opacity=".9" transform="rotate(25)" />
-        <path d="M-6 2-18 14M-3 4-10 20M3 4 10 20M6 2 18 14M-6-1-20 2M6-1 20 2" stroke="#1c1c1e" strokeWidth="2" strokeLinecap="round" />
-        <path d="M-16 13.5h3M-10 18h3M8 18h3M14 13.5h3" stroke="#fff" strokeWidth="1.4" />
-        <ellipse cx="0" cy="2" rx="5" ry="9" fill="#1c1c1e" />
-        <path d="M-4.5 0h9M-4.5 4h9M-4 8h8" stroke="#fff" strokeWidth="1.3" />
-        <circle cx="0" cy="-9" r="4.5" fill="#1c1c1e" />
-        <path d="M0-13v-9" stroke="#1c1c1e" strokeWidth="1.6" strokeLinecap="round" />
-        <path d="M0-6.5V-11" stroke="#fff" strokeWidth="1.2" />
-      </g>
-      <path d="M14 66 66 14" stroke="#ff3b30" strokeWidth="5" strokeLinecap="round" />
-    </svg>
   );
 }

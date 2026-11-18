@@ -199,9 +199,21 @@ async function main() {
   try {
     // 1. Accueil
     await page.goto(BASE);
-    await page.getByText('Ensemble contre le moustique tigre').waitFor();
+    await page.getByText('Le moustique tigre n’est pas qu’un agacement').waitFor();
     await wait(800);
     await shot('01-accueil');
+    check(await page.getByText(/bouchon de bouteille/).isVisible(), 'Introduction : le moustique tigre se reproduit dans un peu d’eau stagnante');
+    await page.getByRole('button', { name: 'Continuer' }).click();
+    await page.getByText('Un avaloir, c’est quoi ?').waitFor();
+    await wait(900);
+    await shot('01b-accueil-avaloir');
+    check(await page.getByText(/avale l’eau de pluie de la rue/).isVisible(), 'Introduction : définition d’un avaloir');
+    await page.getByRole('button', { name: 'Continuer' }).click();
+    await page.getByText('Quand l’eau stagne, les larves prospèrent').waitFor();
+    await wait(900);
+    await shot('01c-accueil-eau-stagnante');
+    check(await page.getByText('Votre mission : les repérer, un par un.').isVisible(), 'Introduction : mission des utilisateurs');
+    check(await page.getByRole('img', { name: /Coupe d’un avaloir/ }).isVisible(), 'Introduction : schéma en coupe d’un avaloir');
     await page.getByRole('button', { name: 'Continuer' }).click();
     await wait(700);
     await shot('02-accueil-etapes');

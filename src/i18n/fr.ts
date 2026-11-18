@@ -23,9 +23,9 @@ const fr: Dict = {
     skip: 'Passer',
     invitedBy: '{name} vous invite à participer',
     page: 'Page {n}',
-    p1Title: 'Ensemble contre le moustique tigre',
+    p1Title: 'Le moustique tigre n’est pas qu’un agacement',
     p1Text:
-      'Le moustique tigre pond dans l’eau stagnante, et les avaloirs de nos rues sont un refuge idéal pour ses larves. En les repérant, vous aidez la commune à les traiter au bon endroit.',
+      'Il pique en plein jour et peut transmettre la dengue, le chikungunya ou le zika. Pour se reproduire, il lui suffit d’un peu d’eau qui stagne : un simple bouchon de bouteille suffit.',
     p2Title: 'Un relevé en 30 secondes',
     step1Title: 'Photographiez l’avaloir',
     step1Text: 'Une photo nette, vue de dessus.',
@@ -51,6 +51,21 @@ const fr: Dict = {
     privacy:
       'Aucune donnée personnelle n’est collectée par l’application. Vos relevés sont publiés sous licence libre, avec votre pseudonyme OpenStreetMap.',
     start: 'C’est parti !',
+  },
+
+  explain: {
+    drainTitle: 'Un avaloir, c’est quoi ?',
+    drainText: 'C’est la grille, ou l’ouverture dans la bordure, qui avale l’eau de pluie de la rue pour l’envoyer dans les canalisations. Il y en a des centaines dans une commune, et vous passez devant sans les voir.',
+    waterTitle: 'Quand l’eau stagne, les larves prospèrent',
+    waterText: 'Sous la grille, le fond d’un avaloir garde souvent de l’eau pendant des semaines : c’est une pouponnière idéale pour le moustique tigre. La mairie peut traiter chaque avaloir avec un larvicide, mais elle doit d’abord savoir où ils sont tous.',
+    mission: 'Votre mission : les repérer, un par un.',
+    cutawayAlt: 'Coupe d’un avaloir : la pluie descend par la grille, le fond du regard reste en eau et abrite des larves de moustique.',
+    grate: 'Grille',
+    water: 'Eau stagnante',
+    larvae: 'Larves',
+    network: 'Vers le réseau',
+    title: 'Comprendre le projet',
+    open: 'Comprendre le projet',
   },
 
   map: {

@@ -23,9 +23,9 @@ const en: Dict = {
     skip: 'Skip',
     invitedBy: '{name} invites you to take part',
     page: 'Page {n}',
-    p1Title: 'Together against the tiger mosquito',
+    p1Title: 'The tiger mosquito is more than a nuisance',
     p1Text:
-      'Tiger mosquitoes lay their eggs in standing water, and our street drains are a perfect nursery for their larvae. By mapping them, you help the town treat exactly the right spots.',
+      'It bites in broad daylight and can spread dengue, chikungunya or Zika. To breed, it only needs a little standing water: a bottle cap is enough.',
     p2Title: 'A survey in 30 seconds',
     step1Title: 'Take a photo of the drain',
     step1Text: 'A sharp photo, seen from above.',
@@ -51,6 +51,21 @@ const en: Dict = {
     privacy:
       'The app collects no personal data. Your surveys are published under an open licence, with your OpenStreetMap username.',
     start: 'Let’s go!',
+  },
+
+  explain: {
+    drainTitle: 'What is a street drain?',
+    drainText: 'It is the grate, or the opening in the kerb, that swallows rainwater from the street and sends it into the pipes. A town has hundreds of them, and you walk past without noticing.',
+    waterTitle: 'When water stagnates, larvae thrive',
+    waterText: 'Under the grate, the bottom of a drain often keeps water for weeks: an ideal nursery for tiger mosquitoes. The town hall can treat each drain with a larvicide, but first it has to know where they all are.',
+    mission: 'Your mission: spot them, one by one.',
+    cutawayAlt: 'Cross-section of a drain: rain flows down through the grate, the bottom stays full of water and shelters mosquito larvae.',
+    grate: 'Grate',
+    water: 'Standing water',
+    larvae: 'Larvae',
+    network: 'To the sewer',
+    title: 'Understand the project',
+    open: 'Understand the project',
   },
 
   map: {
