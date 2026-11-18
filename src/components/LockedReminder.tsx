@@ -23,7 +23,7 @@ export function LockedBanner({ count, points, onConnect }: { count: number; poin
 }
 
 /** Carte d'alerte de l'écran de victoire. */
-export function LockedCard({ count, points, onConnect }: { count: number; points: number; onConnect: () => void }) {
+export function LockedCard({ count, points, onConnect, first }: { count: number; points: number; onConnect: () => void; first?: boolean }) {
   return (
     <div className="card locked-card pop" style={{ marginTop: 16, animationDelay: '.5s' }}>
       <div className="row" style={{ alignItems: 'flex-start' }}>
@@ -31,16 +31,17 @@ export function LockedCard({ count, points, onConnect }: { count: number; points
           <Icon name="lock" size={22} stroke={2.2} />
         </span>
         <div style={{ flex: 1 }}>
-          <div className="headline">{t('locked.cardTitle')}</div>
-          <div className="footnote secondary">{t('locked.cardText', { count })}</div>
+          <div className="headline">{t(first ? 'locked.firstTitle' : 'locked.cardTitle')}</div>
+          <div className="footnote secondary">{first ? t('locked.firstText') : t('locked.cardText', { count })}</div>
         </div>
       </div>
       <div className="locked-points rounded-num">
         🔒 +{points} {t('common.pts')} <span>{t('locked.toUnlock')}</span>
       </div>
       <button className="btn" onClick={onConnect}>
-        {t('locked.connect')}
+        {t(first ? 'locked.firstConnect' : 'locked.connect')}
       </button>
+      {first && <p className="footnote secondary center" style={{ margin: 0 }}>{t('locked.firstLeaving')}</p>}
     </div>
   );
 }

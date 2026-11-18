@@ -214,13 +214,8 @@ async function main() {
     await page.getByRole('button', { name: 'Autoriser' }).first().click();
     await wait(600);
     await shot('04-accueil-autorisations');
-    await page.getByRole('button', { name: 'Continuer' }).click();
-    await page.getByText('Votre compte de contributeur').waitFor();
-    await wait(900);
-    await shot('04b-accueil-compte');
-    check(await page.getByRole('button', { name: 'Créer mon compte gratuit' }).isVisible(), 'Accueil : invitation à créer un compte OSM');
-    check(await page.getByRole('button', { name: 'J’ai déjà un compte OpenStreetMap' }).isVisible(), 'Accueil : connexion avec un compte existant');
-    await page.getByRole('button', { name: 'Plus tard' }).click();
+    check(!(await page.getByText('Votre compte de contributeur').isVisible().catch(() => false)), 'Accueil : aucune demande de compte avant le premier avaloir');
+    await page.getByRole('button', { name: 'C’est parti !' }).click();
     await page.getByText('Installer l’application').waitFor();
     await wait(600);
     await shot('05-installation');
@@ -301,11 +296,23 @@ async function main() {
     await wait(1600);
     await shot('15-reussite');
     check(await page.getByText('Premier pas').isVisible(), 'Badge « Premier pas » débloqué');
-    await page.getByText('Pas encore envoyé à la mairie').scrollIntoViewIfNeeded();
+    await page.getByText('Votre premier avaloir est prêt à être publié !').scrollIntoViewIfNeeded();
     await wait(500);
-    check(await page.getByText('Pas encore envoyé à la mairie').isVisible(), 'Rappel : relevé non envoyé sans compte (écran de victoire)');
+    check(await page.getByText('Vous quitterez l’application un instant').isVisible(), 'Premier relevé : invitation à publier, avec avertissement de redirection');
     await shot('15b-reussite-non-envoye');
-    await page.getByRole('button', { name: 'Terminer' }).click();
+    // Le compte se crée à ce moment-là : « Publier mon premier avaloir » ouvre l'assistant.
+    await page.getByRole('button', { name: 'Publier mon premier avaloir' }).click();
+    await page.getByText('Votre compte de contributeur').waitFor();
+    await wait(900);
+    check(await page.getByText('la création du compte se fait sur le site d’OpenStreetMap').isVisible(), 'Assistant : prévient que le compte se crée sur le site d’OpenStreetMap');
+    check(await page.getByRole('button', { name: 'Créer mon compte gratuit' }).isVisible() && await page.getByRole('button', { name: 'J’ai déjà un compte OpenStreetMap' }).isVisible(), 'Assistant : créer un compte ou se connecter');
+    await shot('04b-accueil-compte');
+    await page.getByRole('button', { name: 'Plus tard' }).click();
+    // Pas de rappel immédiat après « Plus tard » ; il revient plus tard.
+    await wait(2500);
+    check(!(await page.getByText('Votre travail attend d’être envoyé').isVisible().catch(() => false)), 'Après « Plus tard » : pas de rappel immédiat');
+    await page.evaluate(() => localStorage.removeItem('avaloirs.lastNudge'));
+    await page.reload();
     // Fenêtre de rappel à l'ouverture, puis bandeau sur la carte.
     await page.getByText('Votre travail attend d’être envoyé').waitFor({ timeout: 8000 });
     await wait(600);

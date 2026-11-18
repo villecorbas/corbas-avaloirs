@@ -140,6 +140,14 @@ export function App() {
   const closeWizard = () => {
     markWizardResume(false);
     setWizard(false);
+    // « Plus tard » : on ne rappelle pas immédiatement la même demande.
+    if (!getOsmAuth()) {
+      try {
+        localStorage.setItem(NUDGE_KEY, String(Date.now()));
+      } catch {
+        /* ignore */
+      }
+    }
   };
   const closeCapture = useCallback(() => setCapturing(false), []);
 

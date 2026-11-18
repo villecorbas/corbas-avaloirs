@@ -43,12 +43,12 @@ Pile : React 19 + TypeScript, Vite, Leaflet, service worker maison (sans dépend
 4. **Récapitulatif** — adresse, précision, score qualité détaillé, aperçu exact des tags OSM.
 5. **Célébration** — points gagnés, badges, objectif du jour, puis « Relever un autre avaloir » en un geste.
 
-**Compte de contributeur.** À la première utilisation, après les autorisations, un assistant guide la création ou la connexion du compte :
-- « **Créer mon compte gratuit** » explique les 3 étapes (pseudonyme public, confirmation de l'e-mail, « Continuer l'autorisation » puis « Autoriser ») et ouvre la page d'inscription d'OpenStreetMap avec, en paramètre de retour, la demande d'autorisation de l'appli : une fois le compte créé, OSM ramène directement dans l'application, connectée (inscription possible aussi via Google, Apple, Microsoft, Facebook ou GitHub) ;
-- « **J'ai déjà un compte OpenStreetMap** » lance directement la connexion ;
-- puis « **Autoriser la publication des photos** » relie Panoramax avec le même compte, et « Tout est prêt ! » conclut.
+**Compte de contributeur — demandé après le premier avaloir, pas avant.** L'accueil se termine sur les autorisations (localisation, appareil photo) : on essaie l'application avant de s'inscrire quoi que ce soit. À la fin du **premier relevé**, la carte « Votre premier avaloir est prêt à être publié ! » invite à créer ou connecter un compte, en prévenant que la création se fait sur le site d'OpenStreetMap (ouvert dans la même fenêtre) et qu'un retour automatique ramène dans l'application. L'assistant propose :
+- « **Créer mon compte gratuit** » : guide en 3 étapes (pseudonyme public, confirmation de l'e-mail, « Continuer l'autorisation » puis « Autoriser »), puis page d'inscription d'OpenStreetMap avec la demande d'autorisation de l'appli en paramètre de retour : une fois le compte créé, OSM ramène directement dans l'application, connectée (inscription possible aussi via Google, Apple, Microsoft, Facebook ou GitHub) ;
+- « **J'ai déjà un compte OpenStreetMap** » : connexion directe ;
+- puis « **Autoriser la publication des photos** » relie Panoramax avec le même compte (avec consignes pour revenir dans l'appli), et « Tout est prêt ! » conclut. Au retour, l'assistant accueille l'utilisateur (« Vous êtes de retour dans l'application ! »).
 
-L'assistant reprend là où il en était après chaque aller-retour sur openstreetmap.org. « Plus tard » reste possible : les relevés sont gardés sur le téléphone, et l'assistant est reproposé à chaque invitation « Connecter mes comptes » (carte, relevés, écran de victoire).
+L'assistant reprend là où il en était après chaque aller-retour sur openstreetmap.org. « Plus tard » reste possible : les relevés sont gardés sur le téléphone, et l'assistant est reproposé par les rappels (bandeau de la carte, écran de victoire, fenêtre de rappel au plus toutes les 12 h, jamais juste après un « Plus tard »).
 
 Captures d'écran : [`docs/screenshots/`](docs/screenshots/).
 

@@ -495,6 +495,10 @@ const fr: Dict = {
   locked: {
     bannerTitle: { one: '{count} avaloir pas encore envoyé', other: '{count} avaloirs pas encore envoyés' },
     bannerText: 'Connectez-vous pour les publier · 🔒 +{points} pts',
+    firstTitle: 'Votre premier avaloir est prêt à être publié !',
+    firstText: 'Pour l’envoyer à la mairie, créez (ou connectez) votre compte OpenStreetMap : c’est gratuit et ça prend une minute.',
+    firstConnect: 'Publier mon premier avaloir',
+    firstLeaving: 'Vous quitterez l’application un instant, puis vous reviendrez ici automatiquement.',
     cardTitle: 'Pas encore envoyé à la mairie',
     cardText: {
       one: 'Sans compte OpenStreetMap, votre relevé reste sur ce téléphone : la mairie ne peut pas encore l’utiliser.',
@@ -544,6 +548,8 @@ const fr: Dict = {
     wait3: 'Ici, la connexion est détectée toute seule. Sinon, touchez le bouton ci-dessous.',
     waitDone: 'J’ai terminé la connexion',
     notYet: 'Pas encore détectée : terminez la connexion sur la page Panoramax, puis réessayez.',
+    leaving: 'Bon à savoir : la création du compte se fait sur le site d’OpenStreetMap, qui s’ouvre dans cette même fenêtre. Ce n’est pas l’application : à la fin, touchez « Continuer l’autorisation » pour revenir ici.',
+    backInApp: '👋 Vous êtes de retour dans l’application !',
     readyTitle: 'Tout est prêt !',
     readyText: 'Vos relevés seront publiés automatiquement sur OpenStreetMap et Panoramax.',
     readyBonus: '+5 pts pour chaque avaloir publié',

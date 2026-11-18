@@ -6,13 +6,11 @@ import { haptic, Ring } from '../components/ui';
 import { DrainIllustration } from '../components/DrainIllustration';
 import { enableCompass, requestLocationPermission } from '../lib/location';
 import { platform } from '../lib/store';
-import { AccountWizard } from './AccountWizard';
 import { invitedBy } from '../lib/invite';
 
 const PAGE_KEY = 'avaloirs.onboardingPage';
-const PAGES = 5;
-const PERMISSIONS_PAGE = 3;
-const ACCOUNT_PAGE = 4;
+const PAGES = 4;
+const PERMISSIONS_PAGE = 3; // dernière page : le compte OpenStreetMap n'est demandé qu'après le premier avaloir relevé
 
 function savedPage(): number {
   try {
@@ -176,10 +174,6 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
           </div>
           <p className="footnote secondary center" style={{ marginTop: 14 }}>{t('onboarding.privacy')}</p>
         </section>
-
-        <section className="onboarding-page" aria-label={t('wizard.title')}>
-          {page >= PERMISSIONS_PAGE && <AccountWizard onDone={finish} doneLabel={t('onboarding.start')} />}
-        </section>
       </div>
 
       <div className="onboarding-footer">
@@ -188,17 +182,16 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
             <button key={i} className={i === page ? 'on' : ''} onClick={() => goTo(i)} aria-label={t('onboarding.page', { n: i + 1 })} />
           ))}
         </div>
-        {page < ACCOUNT_PAGE && (
-          <button
-            className="btn"
-            onClick={() => {
-              haptic();
-              goTo(page + 1);
-            }}
-          >
-            {t('common.continue')}
-          </button>
-        )}
+        <button
+          className="btn"
+          onClick={() => {
+            haptic();
+            if (page < PERMISSIONS_PAGE) goTo(page + 1);
+            else finish();
+          }}
+        >
+          {page < PERMISSIONS_PAGE ? t('common.continue') : t('onboarding.start')}
+        </button>
       </div>
     </div>
   );

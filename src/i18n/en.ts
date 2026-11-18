@@ -495,6 +495,10 @@ const en: Dict = {
   locked: {
     bannerTitle: { one: '{count} drain not sent yet', other: '{count} drains not sent yet' },
     bannerText: 'Sign in to publish them · 🔒 +{points} pts',
+    firstTitle: 'Your first drain is ready to publish!',
+    firstText: 'To send it to the town hall, create (or sign in to) your OpenStreetMap account: it is free and takes a minute.',
+    firstConnect: 'Publish my first drain',
+    firstLeaving: 'You will leave the app for a moment, then come back here automatically.',
     cardTitle: 'Not sent to the town hall yet',
     cardText: {
       one: 'Without an OpenStreetMap account, your survey stays on this phone: the town hall cannot use it yet.',
@@ -544,6 +548,8 @@ const en: Dict = {
     wait3: 'Here, the connection is detected automatically. Otherwise, tap the button below.',
     waitDone: 'I’ve finished signing in',
     notYet: 'Not detected yet: finish signing in on the Panoramax page, then try again.',
+    leaving: 'Good to know: the account is created on the OpenStreetMap website, which opens in this same window. It is not this app: at the end, tap “Continue authorization” to come back here.',
+    backInApp: '👋 You are back in the app!',
     readyTitle: 'All set!',
     readyText: 'Your surveys will be published automatically on OpenStreetMap and Panoramax.',
     readyBonus: '+5 pts for every published drain',

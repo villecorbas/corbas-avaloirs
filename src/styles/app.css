@@ -1645,3 +1645,8 @@
   gap: 10px;
   align-items: flex-start;
 }
+
+.leaving-card {
+  background: color-mix(in srgb, var(--blue) 10%, var(--card));
+  align-items: flex-start;
+}

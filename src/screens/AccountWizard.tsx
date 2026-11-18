@@ -134,6 +134,10 @@ export function AccountWizard({ onDone, doneLabel }: { onDone: () => void; doneL
             {busy ? <Spinner /> : null}
             {t('wizard.haveAccount')}
           </button>
+          <div className="card row leaving-card">
+            <span aria-hidden="true" style={{ fontSize: 22 }}>🧭</span>
+            <span className="footnote">{t('wizard.leaving')}</span>
+          </div>
           {hasPendingLogin() && <p className="footnote secondary center" style={{ margin: 0 }}>{t('wizard.cameBack')}</p>}
           {later}
           <p className="footnote secondary center" style={{ margin: 0 }}>{t('wizard.laterHint')}</p>
@@ -160,6 +164,10 @@ export function AccountWizard({ onDone, doneLabel }: { onDone: () => void; doneL
           <p className="footnote secondary" style={{ margin: 0 }}>
             💡 {t('wizard.signupTip')}
           </p>
+          <div className="card row leaving-card">
+            <span aria-hidden="true" style={{ fontSize: 22 }}>🧭</span>
+            <span className="footnote">{t('wizard.leaving')}</span>
+          </div>
           <button className="btn" onClick={() => goOsm(true)} disabled={busy}>
             {busy ? <Spinner /> : <Icon name="external" size={18} />}
             {t('wizard.openSignup')}
@@ -179,6 +187,7 @@ export function AccountWizard({ onDone, doneLabel }: { onDone: () => void; doneL
               {osm?.user ? t('accounts.connectedAs', { name: osm.user.name }) : t('accounts.osmConnected')}
             </span>
           </div>
+          <p className="subhead center" style={{ margin: 0, fontWeight: 600 }}>{t('wizard.backInApp')}</p>
           <WizardArt icon="photo" />
           <h1 className="title1 center">{t('wizard.photosTitle')}</h1>
           <p className="subhead secondary center" style={{ margin: 0 }}>

@@ -108,7 +108,7 @@ export function SuccessStep({
       </div>
 
       {!getOsmAuth() && after.unsent > 0 ? (
-        <LockedCard count={after.unsent} points={after.lockedPoints} onConnect={onConnect} />
+        <LockedCard count={after.unsent} points={after.lockedPoints} onConnect={onConnect} first={after.count === 1} />
       ) : !connected ? (
         <button className="card row" style={{ marginTop: 12, width: '100%', textAlign: 'left' }} onClick={onConnect}>
           <Icon name="cloudUp" style={{ color: 'var(--blue)', flex: 'none' }} />
