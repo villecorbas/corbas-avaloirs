@@ -434,6 +434,44 @@ export function parseDiffResult(xml: string): DiffEntry[] {
   return out;
 }
 
+export interface HistoryEntry {
+  version: number;
+  uid?: number;
+}
+
+/** Historique d'un objet : permet de savoir si d'autres contributeurs l'ont modifié. */
+export async function getHistory(type: OsmType, id: number): Promise<HistoryEntry[]> {
+  const json = JSON.parse(await osmFetch(`/${type}/${id}/history.json`));
+  return (json.elements || []).map((e: { version: number; uid?: number }) => ({ version: e.version, uid: e.uid }));
+}
+
+export interface DeleteItem {
+  type: OsmType;
+  id: number;
+  version: number;
+  lat?: number;
+  lon?: number;
+  nodes?: number[];
+}
+
+/**
+ * osmChange de suppression : le chemin d'abord (strict), puis ses nœuds avec « if-unused »
+ * (un nœud encore utilisé par un autre chemin est conservé au lieu de faire échouer l'envoi).
+ */
+export function buildDeleteChange(items: DeleteItem[], changesetId: number): string {
+  const ways = items.filter((i) => i.type === 'way');
+  const nodes = items.filter((i) => i.type === 'node');
+  const wayXml = (w: DeleteItem) =>
+    `  <way id="${w.id}" version="${w.version}" changeset="${changesetId}">\n${(w.nodes || []).map((n) => `    <nd ref="${n}"/>`).join('\n')}\n  </way>`;
+  const nodeXml = (n: DeleteItem) =>
+    `  <node id="${n.id}" version="${n.version}" changeset="${changesetId}" lat="${osmCoord(n.lat ?? 0)}" lon="${osmCoord(n.lon ?? 0)}"/>`;
+  const parts = ['<?xml version="1.0" encoding="UTF-8"?>', `<osmChange version="0.6" generator="ChasseAuxAvaloirs/${APP_VERSION}">`];
+  if (ways.length) parts.push('<delete>', ...ways.map(wayXml), '</delete>');
+  if (nodes.length) parts.push('<delete if-unused="true">', ...nodes.map(nodeXml), '</delete>');
+  parts.push('</osmChange>');
+  return parts.join('\n');
+}
+
 export async function uploadChange(changesetId: number, xml: string): Promise<DiffEntry[]> {
   const res = await osmFetch(`/changeset/${changesetId}/upload`, {
     method: 'POST',

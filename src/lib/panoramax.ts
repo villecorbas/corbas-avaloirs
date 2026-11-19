@@ -183,6 +183,25 @@ async function errorMessage(res: Response): Promise<string> {
   }
 }
 
+/**
+ * Supprime une photo par son identifiant. Il faut d'abord retrouver sa collection (la photo est
+ * rangée dans une séquence après traitement). Résultat « absent » : la photo n'existe pas (ou pas encore).
+ */
+export async function deletePicture(pictureId: string): Promise<'deleted' | 'absent'> {
+  if (!isPictureId(pictureId)) return 'absent';
+  const found = await pnxFetch(`/search?ids=${encodeURIComponent(pictureId)}&limit=1`);
+  if (found.status === 401 || found.status === 403) throw new PanoramaxError(found.status, 'panoramax_auth');
+  if (!found.ok) throw new PanoramaxError(found.status, await errorMessage(found));
+  const feature = (await found.json()).features?.[0];
+  const collection: string | undefined = feature?.collection;
+  if (!collection) return 'absent';
+  const res = await pnxFetch(`/collections/${encodeURIComponent(collection)}/items/${encodeURIComponent(pictureId)}`, { method: 'DELETE' });
+  if (res.status === 404 || res.status === 410) return 'absent';
+  if (res.status === 401 || res.status === 403) throw new PanoramaxError(res.status, 'panoramax_auth');
+  if (!res.ok) throw new PanoramaxError(res.status, await errorMessage(res));
+  return 'deleted';
+}
+
 export async function createUploadSet(title: string, estimated: number): Promise<string> {
   const res = await pnxFetch('/upload_sets', {
     method: 'POST',

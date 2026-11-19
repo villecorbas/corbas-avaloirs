@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { allRecords, onRecordsChange, type DrainRecord } from './db';
 import { computeProgress } from './gamification';
 import { getOsmAuth, type OsmAuth } from './osm';
+import { pendingDeletions } from './deletions';
 import { checkPanoramaxUser, getPanoramaxAuth, type PanoramaxAuth } from './panoramax';
 
 let recordsCache: DrainRecord[] | null = null;
@@ -118,4 +119,20 @@ export function usePanoramaxClaimPolling(active: boolean, onConnected?: () => vo
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active]);
+}
+
+/** Nombre de retraits (relevés supprimés après publication) encore à effectuer sur OSM/Panoramax. */
+export function usePendingDeletions(): number {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    const load = () => void pendingDeletions().then((l) => alive && setN(l.length));
+    load();
+    window.addEventListener('avaloirs:deletions', load);
+    return () => {
+      alive = false;
+      window.removeEventListener('avaloirs:deletions', load);
+    };
+  }, []);
+  return n;
 }

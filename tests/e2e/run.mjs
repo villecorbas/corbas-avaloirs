@@ -112,6 +112,19 @@ async function installMocks(context) {
       return route.fulfill({ contentType: 'text/xml', body: `<?xml version="1.0"?><diffResult version="0.6">${diff.join('')}</diffResult>` });
     }
     if (/\/changeset\/\d+\/close/.test(path)) return route.fulfill({ body: '' });
+    const hist = path.match(/^\/(node|way)\/(\d+)\/history\.json$/);
+    if (hist) {
+      const mine = Number(hist[2]) >= 12345000; // objets créés par l'application : historique entièrement à notre nom (uid 42)
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ elements: [{ type: hist[1], id: Number(hist[2]), version: 1, uid: mine ? 42 : 7 }] }) });
+    }
+    const created = path.match(/^\/(node|way)\/(123450\d\d)\.json$/);
+    if (created) {
+      const isWay = created[1] === 'way';
+      const el = isWay
+        ? { type: 'way', id: Number(created[2]), version: 1, nodes: [12345001, 12345002], tags: { waterway: 'drainage_gutter', covered: 'yes' } }
+        : { type: 'node', id: Number(created[2]), version: 1, lat: HOME.latitude, lon: HOME.longitude };
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ elements: [el] }) });
+    }
     const node = path.match(/^\/node\/(\d+)\.json$/);
     if (node) {
       const n = existing.find((e) => e.id === Number(node[1]));
@@ -159,6 +172,15 @@ async function installMocks(context) {
       return route.fulfill({ status: 202, contentType: 'application/json', body: JSON.stringify({ picture_id: upload.pictureId, rejected: null, file_name: 'x.jpg', inserted_at: new Date().toISOString(), links: [] }) });
     }
     if (/\/complete$/.test(path)) return route.fulfill({ contentType: 'application/json', body: '{}' });
+    if (path === '/api/search') {
+      const id = new URL(req.url()).searchParams.get('ids');
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ features: id ? [{ id, collection: 'col-1' }] : [] }) });
+    }
+    const del = path.match(/^\/api\/collections\/col-1\/items\/([0-9a-f-]+)$/);
+    if (del && req.method() === 'DELETE') {
+      (state.pnxDeleted ||= []).push(del[1]);
+      return route.fulfill({ status: 204, body: '' });
+    }
     return route.fulfill({ status: 404, body: 'not mocked' });
   });
 }
@@ -532,7 +554,28 @@ async function main() {
     await page.locator('.record-row').first().click();
     await wait(1500);
     await shot('22-fiche-releve');
-    await page.keyboard.press('Escape');
+    // Suppression d'un relevé PUBLIÉ (le caniveau : chemin créé par nous) → retiré d'OSM et de Panoramax
+    const rowsBefore = await page.locator('.record-row').count();
+    await page.getByRole('button', { name: 'Supprimer' }).click();
+    await page.getByText('Ce relevé sera retiré de ce téléphone, mais aussi d’OpenStreetMap et de Panoramax.').waitFor();
+    await wait(400);
+    await shot('36-suppression-publie');
+    await page.getByRole('dialog').last().getByRole('button', { name: 'Supprimer' }).click();
+    await page.getByText('retiré d’OpenStreetMap et de Panoramax').waitFor({ timeout: 10000 });
+    const del1 = state.osmChanges.filter((x) => x.includes('<delete'));
+    check(del1.length === 1 && /<delete>\s*<way id="12345001"/.test(del1[0]) && /<delete if-unused="true">\s*<node id="12345001"/.test(del1[0]), 'Suppression : le chemin créé par nous et ses nœuds sont supprimés d’OSM');
+    check(state.pnxDeleted?.length === 1 && state.pnxDeleted[0] === state.uploads[2]?.pictureId, 'Suppression : la photo est supprimée de Panoramax');
+    await wait(500);
+    check((await page.locator('.record-row').count()) === rowsBefore - 1, 'Suppression : le relevé disparaît de la liste');
+    // Relevé qui complétait un avaloir EXISTANT : on retire sa photo, jamais l'objet d'un autre
+    await page.locator('.record-row').first().click();
+    await wait(800);
+    await page.getByRole('button', { name: 'Supprimer' }).click();
+    await page.getByText('Cet avaloir existait déjà sur OpenStreetMap : seule votre photo est retirée').waitFor();
+    await page.getByRole('dialog').last().getByRole('button', { name: 'Supprimer' }).click();
+    for (let i = 0; i < 30 && (state.pnxDeleted?.length || 0) < 2; i++) await wait(300);
+    check(state.osmChanges.filter((x) => x.includes('<delete')).length === 1, 'Suppression : l’avaloir existant d’un autre contributeur n’est jamais supprimé');
+    check(state.pnxDeleted?.length === 2, 'Suppression : sa photo est retirée de Panoramax');
 
     // 13 bis. Couche SIG de la commune : fichier GeoJSON téléchargé et contenu vérifié
     await page.getByRole('button', { name: 'Réglages' }).click();

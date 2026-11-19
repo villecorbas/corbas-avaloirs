@@ -5,7 +5,8 @@ import { Sheet, Spinner } from '../components/ui';
 import { needsSync, dayKey } from '../lib/gamification';
 import { shortAddress } from '../lib/geocode';
 import { panoramaxReady } from '../lib/panoramax';
-import { useAuth, useOnline, useProgress, useRecords } from '../lib/store';
+import { useAuth, useOnline, usePendingDeletions, useProgress, useRecords } from '../lib/store';
+import { processDeletions } from '../lib/deletions';
 import { resetErrors, syncNow, useSyncState } from '../lib/sync';
 import type { DrainRecord } from '../lib/db';
 import { RecordDetail, usePhotoUrl } from './RecordDetail';
@@ -16,6 +17,7 @@ export function RecordsScreen({ onOpenAccounts, onAdd }: { onOpenAccounts: () =>
   const auth = useAuth();
   const online = useOnline();
   const sync = useSyncState();
+  const pendingDeletions = usePendingDeletions();
   const [open, setOpen] = useState<string | null>(null);
 
   const groups = useMemo(() => {
@@ -41,6 +43,19 @@ export function RecordsScreen({ onOpenAccounts, onAdd }: { onOpenAccounts: () =>
         <Stat value={progress.published} label={t('records.statPublished')} color="var(--green)" />
         <Stat value={progress.pending} label={t('records.statPending')} color={progress.pending ? 'var(--orange)' : undefined} />
       </div>
+
+      {pendingDeletions > 0 && (
+        <div className="card row" style={{ marginTop: 12 }}>
+          <Icon name="trash" style={{ color: 'var(--red)', flex: 'none' }} />
+          <div style={{ flex: 1 }}>
+            <div className="headline">{t('records.removalsTitle', { count: pendingDeletions })}</div>
+            <div className="footnote secondary">{connected ? t('records.removalsAuto') : t('records.removalsConnect')}</div>
+          </div>
+          <button className="btn small tinted" onClick={() => (connected ? void processDeletions() : onOpenAccounts())}>
+            {connected ? t('records.removalsRetry') : t('records.connect')}
+          </button>
+        </div>
+      )}
 
       {progress.pending > 0 && (
         <div className="card stack" style={{ marginTop: 12 }}>

@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react';
 import { getConfig } from './config';
 import { allRecords, getPhoto, kvGet, kvSet, updateRecord, type DrainRecord } from './db';
 import { dayKey, needsSync } from './gamification';
+import { processDeletions } from './deletions';
 import { getLang } from '../i18n';
 import {
   buildOsmChange,
@@ -372,6 +373,8 @@ async function syncInner(opts: { manual?: boolean } = {}) {
   const manual = !!opts.manual;
   set({ running: true, lastError: undefined, done: 0, total: 0 });
   try {
+    // Retraits demandés par l'utilisateur (relevés supprimés après publication) : avant tout nouvel envoi.
+    await processDeletions().catch(() => undefined);
     const records = (await allRecords()).filter(needsSync).reverse();
     if (!records.length) return;
     if (panoramaxReady()) await syncPanoramax(records, manual);

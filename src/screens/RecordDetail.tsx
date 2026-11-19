@@ -2,13 +2,15 @@ import { useEffect, useState } from 'react';
 import { formatDate, formatNumber, t } from '../i18n';
 import { Icon } from '../components/Icon';
 import { MapView } from '../components/MapView';
-import { Sheet, Stars, toast } from '../components/ui';
-import { deleteRecord, getPhoto, type DrainRecord, type StepStatus } from '../lib/db';
+import { Sheet, Spinner, Stars, toast } from '../components/ui';
+import { getPhoto, type DrainRecord, type StepStatus } from '../lib/db';
+import { deleteRecordEverywhere, processDeletions } from '../lib/deletions';
+import { panoramaxReady } from '../lib/panoramax';
 import { shortAddress } from '../lib/geocode';
 import { osmElementUrl } from '../lib/osm';
 import { recordCenter, recordLength } from '../lib/export';
 import { pictureViewerUrl } from '../lib/panoramax';
-import { useRecords } from '../lib/store';
+import { useAuth, useRecords } from '../lib/store';
 import { resetErrors, syncNow } from '../lib/sync';
 import { isOsmMappable, osmTags } from '../lib/taxonomy';
 
@@ -44,6 +46,9 @@ export function RecordDetail({ id, onDeleted }: { id: string; onDeleted: () => v
   const rec = records?.find((r) => r.id === id);
   const photo = usePhotoUrl(id, 'blob');
   const [confirm, setConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const auth = useAuth();
+  const connectedBoth = !!auth.osm && panoramaxReady();
   if (!rec) return null;
   const published = rec.sync.osm.status === 'done' || rec.sync.panoramax.status === 'done';
   const hasError = rec.sync.osm.status === 'error' || rec.sync.panoramax.status === 'error';
@@ -151,17 +156,32 @@ export function RecordDetail({ id, onDeleted }: { id: string; onDeleted: () => v
         <div className="stack center">
           <h2 className="title3">{t('records.deleteTitle')}</h2>
           <p className="subhead secondary" style={{ margin: 0 }}>{published ? t('records.deletePublished') : t('records.deleteText')}</p>
+          {published && (
+            <p className="footnote secondary" style={{ margin: 0 }}>
+              {rec.mode === 'enrich' ? t('records.deleteEnrich') : t('records.deleteShared')}
+              {!connectedBoth && ` ${t('records.deleteOffline')}`}
+            </p>
+          )}
           <button
             className="btn danger"
+            disabled={deleting}
             onClick={async () => {
-              await deleteRecord(rec.id);
-              toast(t('records.deleted'), 'trash', 'var(--red)');
-              onDeleted();
+              setDeleting(true);
+              try {
+                const remote = await deleteRecordEverywhere(rec);
+                const left = remote ? (await processDeletions()).remaining : 0;
+                toast(left ? t('records.deletedPending') : remote ? t('records.deletedEverywhere') : t('records.deleted'), 'trash', 'var(--red)');
+              } finally {
+                setDeleting(false);
+                setConfirm(false);
+                onDeleted();
+              }
             }}
           >
+            {deleting ? <Spinner /> : null}
             {t('records.delete')}
           </button>
-          <button className="btn gray" onClick={() => setConfirm(false)}>
+          <button className="btn gray" disabled={deleting} onClick={() => setConfirm(false)}>
             {t('common.cancel')}
           </button>
         </div>
