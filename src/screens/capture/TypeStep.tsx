@@ -40,6 +40,7 @@ export function TypeStep({
     onChange(next, observations);
   };
   const [missing, setMissing] = useState(false);
+  const [more, setMore] = useState(false);
   const waterRef = useRef<HTMLHeadingElement>(null);
   const tri = (v: TriState | undefined, key: keyof Observations) => (value: TriState) =>
     onChange(details, { ...observations, [key]: v === value ? undefined : value });
@@ -126,6 +127,10 @@ export function TypeStep({
           </div>
           <p className="section-footer">{t('water.footer')}</p>
 
+          <button className="btn plain more-toggle" aria-expanded={more} onClick={() => setMore(!more)}>
+            {more ? t('type.lessDetails') : t('type.moreDetails')}
+          </button>
+          {more && <div className="slide-in">
           <h3 className="section-title">{t('type.detailsTitle')}</h3>
           <div className="card stack">
             {details.type !== 'kerb_opening' && details.type !== 'channel' && (
@@ -183,6 +188,7 @@ export function TypeStep({
             </Field>
           </div>
           <p className="section-footer">{t('type.obsFooter')}</p>
+          </div>}
         </div>
       )}
 

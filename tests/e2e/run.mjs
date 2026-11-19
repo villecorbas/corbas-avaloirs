@@ -263,17 +263,11 @@ async function main() {
     await shot('01b-accueil-avaloir');
     check(await page.getByText(/avale l’eau de pluie de la rue/).isVisible(), 'Introduction : définition d’un avaloir');
     await page.getByRole('button', { name: 'Continuer' }).click();
-    await page.getByText('Quand l’eau stagne, les larves prospèrent').waitFor();
-    await wait(900);
-    await shot('01c-accueil-eau-stagnante');
     check(await page.getByText('Votre mission : les repérer, un par un.').isVisible(), 'Introduction : mission des utilisateurs');
     check(await page.getByRole('img', { name: /Coupe d’un avaloir/ }).isVisible(), 'Introduction : schéma en coupe d’un avaloir');
     await page.getByRole('button', { name: 'Continuer' }).click();
     await wait(700);
     await shot('02-accueil-etapes');
-    await page.getByRole('button', { name: 'Continuer' }).click();
-    await wait(900);
-    await shot('03-accueil-jeu');
     await page.getByRole('button', { name: 'Continuer' }).click();
     await wait(600);
     await page.getByRole('button', { name: 'Autoriser' }).first().click();
@@ -337,6 +331,7 @@ async function main() {
     await wait(400);
     await shot('12-type');
     await page.getByRole('radio', { name: /Grille et bordure/ }).click();
+    await page.getByRole('button', { name: 'Ajouter des détails (facultatif)' }).click();
     await page.getByRole('button', { name: 'Rectangle' }).click();
     await page.getByRole('button', { name: 'Fonte / métal' }).click();
     // Question obligatoire sur l'eau stagnante : « Continuer » sans réponse est refusé.
@@ -507,6 +502,7 @@ async function main() {
     await page.getByRole('button', { name: 'Valider la position' }).click();
     await page.getByText('Quel type d’avaloir ?').waitFor();
     await page.getByRole('radio', { name: /Caniveau à grille/ }).click();
+    await page.getByRole('button', { name: 'Ajouter des détails (facultatif)' }).click();
     await page.getByRole('button', { name: 'Fonte / métal' }).click();
     await page.getByRole('radio', { name: /Non.*Sec/ }).click();
     check(await page.getByText(/waterway=drainage_gutter \+ covered=yes/).isVisible(), 'Caniveau : explication du schéma OSM affichée');
@@ -620,6 +616,7 @@ async function main() {
     // 13 bis. Couche SIG de la commune : fichier GeoJSON téléchargé et contenu vérifié
     await page.getByRole('button', { name: 'Réglages' }).click();
     const dlPromise = page.waitForEvent('download', { timeout: 20000 });
+    await page.getByRole('button', { name: /Options avancées/ }).click();
     await page.getByRole('button', { name: /Couche SIG de la commune/ }).click();
     const dl = await dlPromise;
     const geo = JSON.parse(readFileSync(await dl.path(), 'utf8'));

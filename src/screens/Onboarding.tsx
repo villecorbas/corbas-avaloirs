@@ -2,15 +2,15 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { getConfig } from '../lib/config';
 import { t } from '../i18n';
 import { Icon } from '../components/Icon';
-import { haptic, Ring } from '../components/ui';
+import { haptic } from '../components/ui';
 import { enableCompass, requestLocationPermission } from '../lib/location';
 import { platform } from '../lib/store';
 import { invitedBy } from '../lib/invite';
-import { ExplainDrain, ExplainMosquito, ExplainWater } from './Explainer';
+import { DrainCutaway, ExplainMosquito } from './Explainer';
 
 const PAGE_KEY = 'avaloirs.onboardingPage';
-const PAGES = 6;
-const PERMISSIONS_PAGE = 5; // dernière page : le compte OpenStreetMap n'est demandé qu'après le premier avaloir relevé
+const PAGES = 4;
+const PERMISSIONS_PAGE = 3; // dernière page : le compte OpenStreetMap n'est demandé qu'après le premier avaloir relevé
 
 function savedPage(): number {
   try {
@@ -98,11 +98,12 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
         </section>
 
         <section className="onboarding-page">
-          <ExplainDrain />
-        </section>
-
-        <section className="onboarding-page">
-          <ExplainWater />
+          <div className="cutaway-wrap">
+            <DrainCutaway />
+          </div>
+          <h1 className="title1 center">{t('explain.drainTitle')}</h1>
+          <p className="subhead secondary center">{t('explain.drainText')}</p>
+          <p className="subhead center mission">{t('explain.mission')}</p>
         </section>
 
         <section className="onboarding-page">
@@ -125,28 +126,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
               </div>
             ))}
           </div>
-        </section>
-
-        <section className="onboarding-page">
-          <div className="onboarding-art">
-            <div className="game-preview">
-              <Ring progress={0.7} size={120} width={12} color="var(--accent)">
-                <div className="center">
-                  <div className="caption secondary">{t('level.short')}</div>
-                  <div className="title1 rounded-num">4</div>
-                </div>
-              </Ring>
-              <div className="medals-row">
-                {['🎯', '🔥', '📍', '🧭'].map((m, i) => (
-                  <span key={m} className="medal pop" style={{ animationDelay: `${0.2 + i * 0.1}s`, background: ['#34c759', '#ff9500', '#0a84ff', '#5e5ce6'][i] }}>
-                    {m}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-          <h1 className="title1 center">{t('onboarding.p3Title')}</h1>
-          <p className="subhead secondary center">{t('onboarding.p3Text')}</p>
+          <p className="footnote secondary center" style={{ marginTop: 14 }}>🏅 {t('onboarding.p3Short')}</p>
         </section>
 
         <section className="onboarding-page">

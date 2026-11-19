@@ -35,6 +35,7 @@ const fr: Dict = {
     step3Text: 'Grille, bouche dans la bordure… on vous guide.',
     step4Title: 'C’est publié !',
     step4Text: 'Sur OpenStreetMap et Panoramax, librement réutilisables par tous.',
+    p3Short: 'Chaque avaloir rapporte des points et des badges : montez de niveau en jouant !',
     p3Title: 'Gagnez des points et des badges',
     p3Text:
       'Chaque avaloir rapporte des points, d’autant plus que le relevé est précis et complet. Montez de niveau, tenez votre série et grimpez dans le classement de la commune.',
@@ -202,6 +203,8 @@ const fr: Dict = {
   },
 
   type: {
+    moreDetails: 'Ajouter des détails (facultatif)',
+    lessDetails: 'Masquer les détails',
     title: 'Quel type d’avaloir ?',
     subtitle: 'Comparez avec votre photo',
     ctaType: 'Choisissez un type d’avaloir',
@@ -636,6 +639,8 @@ const fr: Dict = {
   },
 
   settings: {
+    moreOptions: 'Options avancées (exports, mode test)',
+    lessOptions: 'Masquer les options avancées',
     title: 'Réglages',
     language: 'Langue',
     app: 'Application',

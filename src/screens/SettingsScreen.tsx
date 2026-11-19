@@ -39,6 +39,7 @@ export function SettingsScreen({ onInvite }: { onInvite: () => void }) {
   const commune = useCommune();
   const [sheet, setSheet] = useState<'install' | 'about' | 'explain' | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [showAdv, setShowAdv] = useState(false);
   const cfg = getConfig();
   const dev = cfg.openstreetmap.environment === 'dev';
   const stamp = new Date().toISOString().slice(0, 10);
@@ -88,6 +89,11 @@ export function SettingsScreen({ onInvite }: { onInvite: () => void }) {
         <Row icon="qr" color="var(--indigo)" label={t('settings.share')} onClick={onInvite} />
       </div>
 
+      <button className="btn plain more-toggle" aria-expanded={showAdv} onClick={() => setShowAdv(!showAdv)}>
+        {showAdv ? t('settings.lessOptions') : t('settings.moreOptions')}
+      </button>
+      {showAdv && (
+        <div className="slide-in">
       <h3 className="section-title">{t('settings.data')}</h3>
       <div className="list">
         <Row
@@ -136,6 +142,9 @@ export function SettingsScreen({ onInvite }: { onInvite: () => void }) {
           />
         </label>
       </div>
+
+        </div>
+      )}
 
       <h3 className="section-title">{t('settings.about')}</h3>
       <div className="list">

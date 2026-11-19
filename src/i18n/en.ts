@@ -35,6 +35,7 @@ const en: Dict = {
     step3Text: 'Grate, kerb opening… we guide you.',
     step4Title: 'It’s published!',
     step4Text: 'On OpenStreetMap and Panoramax, free for everyone to reuse.',
+    p3Short: 'Every drain earns points and badges: level up as you play!',
     p3Title: 'Earn points and badges',
     p3Text:
       'Every drain earns points, even more when the survey is precise and complete. Level up, keep your streak alive and climb your town’s leaderboard.',
@@ -202,6 +203,8 @@ const en: Dict = {
   },
 
   type: {
+    moreDetails: 'Add details (optional)',
+    lessDetails: 'Hide details',
     title: 'What type of drain?',
     subtitle: 'Compare with your photo',
     ctaType: 'Choose a drain type',
@@ -636,6 +639,8 @@ const en: Dict = {
   },
 
   settings: {
+    moreOptions: 'Advanced options (exports, test mode)',
+    lessOptions: 'Hide advanced options',
     title: 'Settings',
     language: 'Language',
     app: 'App',

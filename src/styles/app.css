@@ -1856,3 +1856,5 @@
 .map-legend.compact {
   min-height: 44px;
 }
+
+.more-toggle { width: 100%; margin: 14px 0 4px; }
