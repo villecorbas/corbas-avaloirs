@@ -7,7 +7,7 @@ import { computeProgress, newlyUnlocked, qualityScore, recordPoints, type BadgeS
 import { reverseGeocode, type Address } from '../../lib/geocode';
 import { distance } from '../../lib/geo';
 import { DRAIN_TYPES, needsTrace } from '../../lib/taxonomy';
-import { useLocation } from '../../lib/location';
+import { refreshPermission, useLocation } from '../../lib/location';
 import { cachedNearbyDrains, fetchNearbyDrains, type OsmDrain } from '../../lib/overpass';
 import { useRecords } from '../../lib/store';
 import { syncNow } from '../../lib/sync';
@@ -26,8 +26,12 @@ const MATERIALS: DrainMaterial[] = ['metal', 'concrete'];
 
 export function CaptureFlow({ onClose, onOpenAccounts, onOpenInvite }: { onClose: () => void; onOpenAccounts: () => void; onOpenInvite: () => void }) {
   const records = useRecords() || [];
-  const location = useLocation(true); // démarre le GPS dès l'ouverture
   const [step, setStep] = useState<Step>('photo');
+  // Deux demandes d'autorisation simultanées (caméra + position) s'annulent parfois sur iPhone :
+  // on réchauffe le GPS dès l'ouverture seulement s'il est déjà autorisé, sinon après la photo.
+  const passive = useLocation(false);
+  const location = useLocation(step !== 'photo' || passive.permission === 'granted');
+  useEffect(() => void refreshPermission(), []);
   const [photo, setPhoto] = useState<PhotoResult>();
   const [loc, setLoc] = useState<LocateResult>();
   const [details, setDetails] = useState<Partial<DrainDetails>>({});

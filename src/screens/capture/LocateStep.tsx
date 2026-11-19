@@ -4,7 +4,8 @@ import { Icon } from '../../components/Icon';
 import { MapView, type BaseLayer, type MapHandle, type MapLine, type MapMarker } from '../../components/MapView';
 import { haptic, Ring, Sheet, Spinner, toast } from '../../components/ui';
 import { accuracyLevel, averageFixes, distance, distanceToLine, type GpsSample, type LatLon } from '../../lib/geo';
-import { getLocationState, onSample, useLocation } from '../../lib/location';
+import { getLocationState, onSample, requestLocationPermission, restartLocation, useLocation } from '../../lib/location';
+import { platform } from '../../lib/store';
 import { distanceToDrain, type OsmDrain } from '../../lib/overpass';
 import type { DrainRecord } from '../../lib/db';
 import { typeFromTags } from '../../lib/taxonomy';
@@ -32,6 +33,35 @@ export function LocateStep({
 }) {
   const loc = useLocation(true);
   const [phase, setPhase] = useState<Phase>('approach');
+  const [asking, setAsking] = useState(false);
+  const [slow, setSlow] = useState(false);
+  // Pas de position au bout de 12 s : on ne laisse pas tourner indéfiniment, on propose de l'aide.
+  useEffect(() => {
+    if (loc.fix) return setSlow(false);
+    const id = setTimeout(() => setSlow(true), 12_000);
+    return () => clearTimeout(id);
+  }, [loc.fix, loc.status]);
+  const blocked: 'denied' | 'unavailable' | 'slow' | 'prompt' | null = loc.fix
+    ? null
+    : loc.status === 'denied'
+      ? 'denied'
+      : loc.status === 'unavailable'
+        ? 'unavailable'
+        : slow
+          ? 'slow'
+          : loc.permission === 'prompt'
+            ? 'prompt'
+            : null;
+  const askPermission = async () => {
+    setAsking(true);
+    await requestLocationPermission();
+    setAsking(false);
+  };
+  const retry = () => {
+    haptic();
+    setSlow(false);
+    restartLocation();
+  };
   const [layer, setLayer] = useState<BaseLayer>('ortho');
   const [fix, setFix] = useState<{ lat: number; lon: number; acc: number; samples: number } | null>(null);
   const [center, setCenter] = useState<LatLon | null>(null);
@@ -210,22 +240,37 @@ export function LocateStep({
       </div>
 
       <div className="locate-panel">
-        {phase === 'approach' && loc.status === 'denied' && (
+        {phase === 'approach' && blocked && (
           <div className="stack slide-in">
             <div className="row">
-              <div className="icon-tile" style={{ background: 'var(--red)' }}>
+              <div className="icon-tile" style={{ background: loc.status === 'denied' ? 'var(--red)' : 'var(--orange)' }}>
                 <Icon name="location" size={18} />
               </div>
-              <h2 className="title3">{t('locate.deniedTitle')}</h2>
+              <h2 className="title3">{t(`locate.blocked.${blocked}.title`)}</h2>
             </div>
-            <p className="subhead secondary" style={{ margin: 0 }}>{t('locate.deniedText')}</p>
+            <p className="subhead secondary" style={{ margin: 0 }}>{t(`locate.blocked.${blocked}.text`)}</p>
+            {blocked === 'denied' && <p className="footnote" style={{ margin: 0 }}>{t(`locate.settings.${platform()}`)}</p>}
+            {blocked === 'prompt' ? (
+              <button className="btn" onClick={askPermission} disabled={asking}>
+                {asking ? <Spinner /> : <Icon name="location" />} {t('locate.allow')}
+              </button>
+            ) : (
+              <button className="btn" onClick={retry}>
+                <Icon name="sync" /> {t('locate.retry')}
+              </button>
+            )}
             <button className="btn tinted" onClick={manualPlacement}>
               <Icon name="move" /> {t('locate.manual')}
             </button>
+            {loc.error && (
+              <p className="caption secondary center selectable" style={{ margin: 0 }}>
+                {t('locate.technical', { code: loc.error.code })}
+              </p>
+            )}
           </div>
         )}
 
-        {phase === 'approach' && loc.status !== 'denied' && (
+        {phase === 'approach' && !blocked && (
           <div className="stack slide-in">
             <div className="row" style={{ alignItems: 'flex-start' }}>
               <StandOverIllustration />

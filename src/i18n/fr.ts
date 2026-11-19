@@ -111,6 +111,7 @@ const fr: Dict = {
     retake: 'Reprendre',
     use: 'Utiliser la photo',
     previewAlt: 'Photo de l’avaloir',
+    failed: 'La photo n’a pas pu être traitée. Utilisez l’appareil photo du téléphone ci-dessous.',
     noLiveCamera: 'L’aperçu de l’appareil photo n’est pas disponible. Utilisez l’appareil photo du téléphone.',
     openCamera: 'Ouvrir l’appareil photo',
     verdict: {
@@ -145,6 +146,20 @@ const fr: Dict = {
     deniedText:
       'Autorisez la localisation dans les réglages du téléphone (Confidentialité › Service de localisation), puis revenez. Vous pouvez aussi placer l’avaloir à la main.',
     manual: 'Placer sur la carte',
+    allow: 'Autoriser la localisation',
+    retry: 'Réessayer',
+    technical: 'Détail technique : code {code}',
+    blocked: {
+      denied: { title: 'Localisation refusée', text: 'Sans position, impossible de situer l’avaloir automatiquement. Autorisez la localisation dans les réglages du téléphone, puis revenez ici : l’appli se relance toute seule.' },
+      unavailable: { title: 'Position introuvable', text: 'Le téléphone n’arrive pas à se localiser. Vérifiez que la localisation est activée, sortez à l’air libre (loin des murs et des arbres), puis réessayez.' },
+      slow: { title: 'Le signal tarde à venir', text: 'Il peut falloir quelques secondes à découvert. Si rien ne vient : vérifiez que la localisation est activée, puis réessayez, ou placez l’avaloir à la main sur la carte.' },
+      prompt: { title: 'Autorisez la localisation', text: 'Pour situer l’avaloir au mètre près, l’application a besoin de votre position. Touchez le bouton, puis « Autoriser ».' },
+    },
+    settings: {
+      ios: 'iPhone : Réglages › Confidentialité et sécurité › Service de localisation (activé) › Sites web de Safari › « Lors de l’utilisation de l’app », avec « Position précise » activée.',
+      android: 'Android : Paramètres › Applications › votre navigateur (ou « Avaloirs ») › Autorisations › Position › « Autoriser seulement si l’appli est en cours d’utilisation », avec « Position précise » activée.',
+      other: 'Autorisez la localisation pour ce site dans les réglages de votre navigateur.',
+    },
     noFix: 'Aucune position GPS reçue. Patientez quelques secondes à découvert, puis réessayez.',
   },
 

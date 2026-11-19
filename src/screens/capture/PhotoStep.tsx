@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { t } from '../../i18n';
 import { Icon } from '../../components/Icon';
-import { haptic, Spinner } from '../../components/ui';
+import { haptic, Spinner, toast } from '../../components/ui';
 import { captureFromVideo, photoVerdict, processFile, type ProcessedPhoto } from '../../lib/photo';
 import { getLocationState } from '../../lib/location';
 
@@ -84,6 +84,10 @@ export function PhotoStep({ initial, onDone }: { initial?: PhotoResult; onDone: 
     setBusy(true);
     try {
       finish(await captureFromVideo(video.current));
+    } catch {
+      // Jamais de rotation infinie : on le dit, et on propose l'appareil photo du téléphone.
+      toast(t('photo.failed'), 'warning', 'var(--orange)');
+      setCam('unavailable');
     } finally {
       setBusy(false);
     }
@@ -96,6 +100,8 @@ export function PhotoStep({ initial, onDone }: { initial?: PhotoResult; onDone: 
     setBusy(true);
     try {
       finish(await processFile(file), Math.min(file.lastModified || Date.now(), Date.now()));
+    } catch {
+      toast(t('photo.failed'), 'warning', 'var(--orange)');
     } finally {
       setBusy(false);
     }

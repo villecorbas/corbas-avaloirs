@@ -4,9 +4,19 @@ const MAX_SIDE = 4032;
 const THUMB_SIDE = 360;
 
 function canvasToBlob(canvas: HTMLCanvasElement, quality: number): Promise<Blob> {
-  return new Promise((resolve, reject) =>
-    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('encode_failed'))), 'image/jpeg', quality),
-  );
+  return new Promise((resolve, reject) => {
+    // Certains navigateurs mobiles n'appellent jamais le rappel quand la mémoire manque : on ne reste pas bloqué.
+    const timer = setTimeout(() => reject(new Error('encode_timeout')), 15000);
+    canvas.toBlob(
+      (b) => {
+        clearTimeout(timer);
+        if (b) resolve(b);
+        else reject(new Error('encode_failed'));
+      },
+      'image/jpeg',
+      quality,
+    );
+  });
 }
 
 function drawScaled(source: CanvasImageSource, w: number, h: number, maxSide: number) {
@@ -40,6 +50,8 @@ async function finish(canvas: HTMLCanvasElement): Promise<ProcessedPhoto> {
 
 /** Capture l'image courante du flux vidéo de la caméra. */
 export async function captureFromVideo(video: HTMLVideoElement): Promise<ProcessedPhoto> {
+  // Flux pas encore prêt (largeur 0, fréquent juste après l'ouverture sur iPhone) : image vide impossible à enregistrer.
+  if (!video.videoWidth || !video.videoHeight) throw new Error('video_not_ready');
   const canvas = drawScaled(video, video.videoWidth, video.videoHeight, MAX_SIDE);
   return finish(canvas);
 }

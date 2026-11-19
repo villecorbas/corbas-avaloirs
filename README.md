@@ -139,6 +139,8 @@ L'écran Carte charge tous les avaloirs de la zone affichée (cercle plein : ave
 
 ## Sécurité et fiabilité
 
+- **Localisation jamais bloquante** : si le GPS précis échoue (intérieur, GPS froid), l'appli retombe sur la position réseau ; si la position est introuvable, refusée ou trop lente (12 s), un panneau explique quoi faire (consignes adaptées à iPhone/Android), propose « Réessayer » et « Placer sur la carte », et affiche un code technique pour le support. Au retour des Réglages du téléphone, la recherche reprend toute seule. Les demandes d'autorisation caméra et position ne sont plus simultanées (elles s'annulaient parfois sur iPhone). Test : `npm run e2e:geo`.
+
 - **Content-Security-Policy** injectée à la compilation : scripts limités à l'application, aucun objet ni cadre externe, connexions en HTTPS uniquement. Le jeton OAuth OpenStreetMap (permissions `read_prefs` et `write_api`, sans mot de passe) est conservé dans le navigateur de l'utilisateur et **révoqué côté OSM à la déconnexion**.
 - **Entrées non fiables** (tags OSM, paramètre d'invitation `?ref=`, réponses des serveurs) : identifiants de photo validés (UUID), pseudonymes nettoyés des caractères de direction/contrôle, serveurs configurables acceptés en HTTPS seulement, export CSV protégé contre l'injection de formules.
 - **Pas de doublons sur la carte publique** : un seul onglet publie à la fois (verrou Web Locks), et après un envoi interrompu sans réponse, l'appli recherche dans OSM l'objet éventuellement déjà créé (via l'identifiant de sa photo) avant de réessayer.

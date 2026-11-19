@@ -7,16 +7,23 @@ import type { GpsSample } from './geo';
  */
 
 export type GeoStatus = 'idle' | 'locating' | 'ok' | 'denied' | 'unavailable';
+export type GeoPermission = 'granted' | 'prompt' | 'denied' | 'unknown';
 
 interface State {
   status: GeoStatus;
   fix: GpsSample | null;
   heading: number | null;
+  /** Dernière erreur du capteur (1 refus, 2 position indisponible, 3 délai dépassé). */
+  error: { code: number; message: string } | null;
+  permission: GeoPermission;
 }
 
-let state: State = { status: 'idle', fix: null, heading: null };
+let state: State = { status: 'idle', fix: null, heading: null, error: null, permission: 'unknown' };
 let watchId: number | null = null;
 let users = 0;
+/** Haute précision d'abord ; si le téléphone n'y arrive pas (intérieur, GPS froid), repli sur le réseau. */
+let highAccuracy = true;
+let visibilityBound = false;
 const listeners = new Set<(s: State) => void>();
 const sampleListeners = new Set<(s: GpsSample) => void>();
 
@@ -28,10 +35,14 @@ function set(patch: Partial<State>) {
 function start() {
   if (watchId !== null) return;
   if (!('geolocation' in navigator)) {
-    set({ status: 'unavailable' });
+    set({ status: 'unavailable', error: { code: 0, message: 'geolocation_unsupported' } });
     return;
   }
+  bindVisibility();
   set({ status: state.fix ? 'ok' : 'locating' });
+  const options: PositionOptions = highAccuracy
+    ? { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
+    : { enableHighAccuracy: false, maximumAge: 30000, timeout: 25000 };
   watchId = navigator.geolocation.watchPosition(
     (pos) => {
       const sample: GpsSample = {
@@ -40,15 +51,63 @@ function start() {
         acc: pos.coords.accuracy,
         t: pos.timestamp || Date.now(),
       };
-      set({ status: 'ok', fix: sample });
+      set({ status: 'ok', fix: sample, error: null, permission: 'granted' });
       sampleListeners.forEach((l) => l(sample));
     },
     (err) => {
-      if (err.code === err.PERMISSION_DENIED) set({ status: 'denied' });
-      else if (!state.fix) set({ status: 'unavailable' });
+      const error = { code: err.code, message: err.message };
+      if (err.code === err.PERMISSION_DENIED) {
+        stop();
+        set({ status: 'denied', error, permission: 'denied' });
+      } else if (!state.fix) {
+        if (highAccuracy) {
+          // Le GPS précis n'a rien donné : on retente tout de suite avec la position réseau (Wi-Fi, antennes).
+          stop();
+          highAccuracy = false;
+          start();
+        } else {
+          stop();
+          set({ status: 'unavailable', error });
+        }
+      }
     },
-    { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 },
+    options,
   );
+}
+
+/** Relance la recherche (bouton « Réessayer », retour dans l'application après un réglage). */
+export function restartLocation() {
+  stop();
+  highAccuracy = true;
+  set({ status: 'locating', error: null });
+  if (users > 0) start();
+}
+
+/** Au retour dans l'appli (après les Réglages du téléphone), on relance si la position était bloquée. */
+function bindVisibility() {
+  if (visibilityBound) return;
+  visibilityBound = true;
+  const retry = () => {
+    if (document.visibilityState !== 'visible' || users === 0) return;
+    if (state.status === 'denied' || state.status === 'unavailable') restartLocation();
+  };
+  document.addEventListener('visibilitychange', retry);
+  window.addEventListener('focus', retry);
+}
+
+/** État de l'autorisation, quand le navigateur sait le dire (sans déclencher de demande). */
+export async function refreshPermission() {
+  try {
+    const p = await navigator.permissions?.query({ name: 'geolocation' as PermissionName });
+    if (!p) return;
+    set({ permission: p.state as GeoPermission });
+    p.onchange = () => {
+      set({ permission: p.state as GeoPermission });
+      if (p.state === 'granted' && users > 0 && state.status !== 'ok') restartLocation();
+    };
+  } catch {
+    /* Permissions API indisponible : on n'en déduit rien */
+  }
 }
 
 function stop() {
@@ -58,7 +117,9 @@ function stop() {
 
 export function acquireLocation() {
   users++;
-  start();
+  // Après un refus ou un échec, on ne relance pas à chaque écran (cela ferait clignoter l'interface
+  // et redemanderait l'autorisation) : « Réessayer » ou le retour dans l'appli s'en chargent.
+  if (state.status !== 'denied' && state.status !== 'unavailable') start();
   return () => {
     users = Math.max(0, users - 1);
     if (users === 0) stop();
@@ -133,19 +194,25 @@ export async function enableCompass(): Promise<boolean> {
 export function requestLocationPermission(): Promise<boolean> {
   return new Promise((resolve) => {
     if (!('geolocation' in navigator)) return resolve(false);
+    // Appelée depuis un geste de l'utilisateur : c'est ce qui fait apparaître la demande d'autorisation de façon fiable.
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         set({
           status: 'ok',
+          error: null,
+          permission: 'granted',
           fix: { lat: pos.coords.latitude, lon: pos.coords.longitude, acc: pos.coords.accuracy, t: pos.timestamp },
         });
+        if (users > 0) restartLocation();
         resolve(true);
       },
       (err) => {
-        if (err.code === err.PERMISSION_DENIED) set({ status: 'denied' });
+        const error = { code: err.code, message: err.message };
+        if (err.code === err.PERMISSION_DENIED) set({ status: 'denied', error, permission: 'denied' });
+        else set({ error });
         resolve(err.code !== err.PERMISSION_DENIED);
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 },
+      { enableHighAccuracy: false, timeout: 20000, maximumAge: 60000 },
     );
   });
 }

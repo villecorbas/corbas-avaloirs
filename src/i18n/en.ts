@@ -111,6 +111,7 @@ const en: Dict = {
     retake: 'Retake',
     use: 'Use photo',
     previewAlt: 'Photo of the drain',
+    failed: 'The photo could not be processed. Use your phone’s camera below.',
     noLiveCamera: 'Live camera preview is not available. Use your phone’s camera instead.',
     openCamera: 'Open camera',
     verdict: {
@@ -145,6 +146,20 @@ const en: Dict = {
     deniedText:
       'Allow location in your phone settings (Privacy › Location Services), then come back. You can also place the drain by hand.',
     manual: 'Place on the map',
+    allow: 'Allow location',
+    retry: 'Try again',
+    technical: 'Technical detail: code {code}',
+    blocked: {
+      denied: { title: 'Location denied', text: 'Without a position, the drain cannot be located automatically. Allow location in your phone settings, then come back here: the app restarts the search by itself.' },
+      unavailable: { title: 'Position not found', text: 'The phone cannot locate itself. Check that location is turned on, go outside (away from walls and trees), then try again.' },
+      slow: { title: 'The signal is slow to arrive', text: 'It can take a few seconds in the open. If nothing comes: check that location is turned on, then try again, or place the drain by hand on the map.' },
+      prompt: { title: 'Allow location', text: 'To locate the drain within a metre, the app needs your position. Tap the button, then “Allow”.' },
+    },
+    settings: {
+      ios: 'iPhone: Settings › Privacy & Security › Location Services (on) › Safari Websites › “While Using the App”, with “Precise Location” on.',
+      android: 'Android: Settings › Apps › your browser (or “Avaloirs”) › Permissions › Location › “Allow only while using the app”, with “Use precise location” on.',
+      other: 'Allow location for this site in your browser settings.',
+    },
     noFix: 'No GPS position received. Wait a few seconds in the open, then try again.',
   },
 
