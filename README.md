@@ -137,6 +137,18 @@ L'écran Carte charge tous les avaloirs de la zone affichée (cercle plein : ave
 
 « Peut-il retenir de l'eau stagnante ? » — *Oui, visible* / *Possible* / *Non* — doit être renseignée pour chaque relevé : c'est l'information clé pour la lutte anti-vectorielle. Elle est publiée avec la photo sur Panoramax (`avaloirs|standing_water=yes|possible|no`) et figure dans les exports.
 
+## Ergonomie et accessibilité
+
+Revue d'interface menée écran par écran (iPhone SE en mode sombre, texte système agrandi de 50 %), avec un audit automatique rejouable : `AUDIT=1 DEVICE='iPhone SE' SCHEME=dark node tests/e2e/run.mjs` (zones tactiles, débordements, textes trop petits) et `TEXTSCALE=1.5 node tests/e2e/run.mjs` (taille de texte agrandie).
+
+- **Taille de texte du système** (Dynamic Type) : tous les textes suivent le réglage iOS (Réglages › Accessibilité › Affichage et luminosité › Taille du texte) ; vérifié sans débordement jusqu'à ×1,5.
+- **Zones tactiles ≥ 44 pt** (recommandation Apple) sur tous les boutons, y compris les petits boutons dont l'aspect est inchangé.
+- **Étape « type » guidée** : le bouton dit ce qu'il manque (« Choisissez un type d'avaloir », « Il reste une question sur l'eau stagnante ») au lieu d'être simplement grisé.
+- **Première ouverture de la carte** : bulle « Repérez un avaloir dans la rue, puis touchez ici » et bouton qui pulse, jusqu'au premier toucher ou relevé.
+- **Carte plus lisible** : légende repliée par défaut (« Légende · 17 % couvertes »), dépliable d'un toucher.
+- **Fenêtres modales accessibles** : le focus clavier / lecteur d'écran entre dans la fenêtre, y reste (Tab piégé), puis revient où il était ; Échap ferme.
+- Déjà en place : mode sombre, mouvements réduits respectés, retours haptiques, zones de sécurité, étiquettes sur les boutons icônes.
+
 ## Sécurité et fiabilité
 
 - **Supprimer un relevé, même publié** : depuis la fiche du relevé, « Supprimer » le retire du téléphone **et** d'OpenStreetMap et de Panoramax. Garde-fous, car la carte est publique et partagée : l'objet OSM n'est supprimé que si tout son historique est de la personne connectée (chemin et nœuds d'un caniveau compris) ; si quelqu'un d'autre l'a modifié, ou si le relevé complétait un avaloir déjà présent, **seule la référence à sa photo est retirée** (le travail des autres est conservé). OpenStreetMap est traité avant Panoramax pour ne jamais laisser un lien vers une photo supprimée. Hors ligne ou non connecté, le retrait est mis en file (bandeau « retrait en attente » dans Relevés) et effectué dès que possible ; les envois interrompus sans réponse sont retrouvés par l'identifiant de leur photo. Chaque retrait OSM est un jeu de modifications commenté et signé du compte du participant.

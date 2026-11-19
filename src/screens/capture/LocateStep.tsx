@@ -301,7 +301,7 @@ export function LocateStep({
               <Icon name="location" /> {t('locate.imOver')}
             </button>
             {loc.fix && loc.fix.acc > 15 && <p className="footnote secondary center" style={{ margin: 0 }}>{t('locate.poorTip')}</p>}
-            <button className="btn plain" onClick={manualPlacement} style={{ minHeight: 32 }}>
+            <button className="btn plain" onClick={manualPlacement}>
               {t('locate.manualLink')}
             </button>
           </div>

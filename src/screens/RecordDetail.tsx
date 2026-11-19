@@ -102,7 +102,7 @@ export function RecordDetail({ id, onDeleted }: { id: string; onDeleted: () => v
           </span>
           <span style={{ flex: 1 }}>Panoramax</span>
           {rec.sync.panoramax.status === 'done' ? (
-            <a href={pictureViewerUrl(rec.sync.panoramax.pictureId)} target="_blank" rel="noopener" className="row" style={{ gap: 4 }}>
+            <a href={pictureViewerUrl(rec.sync.panoramax.pictureId)} target="_blank" rel="noopener" className="row hit" style={{ gap: 4 }}>
               {statusChip('done')} <Icon name="external" size={16} />
             </a>
           ) : (
@@ -115,7 +115,7 @@ export function RecordDetail({ id, onDeleted }: { id: string; onDeleted: () => v
           </span>
           <span style={{ flex: 1 }}>OpenStreetMap</span>
           {rec.sync.osm.status === 'done' && rec.sync.osm.osmId ? (
-            <a href={osmElementUrl(rec.sync.osm.osmType ?? 'node', rec.sync.osm.osmId)} target="_blank" rel="noopener" className="row" style={{ gap: 4 }}>
+            <a href={osmElementUrl(rec.sync.osm.osmType ?? 'node', rec.sync.osm.osmId)} target="_blank" rel="noopener" className="row hit" style={{ gap: 4 }}>
               {statusChip('done')} <Icon name="external" size={16} />
             </a>
           ) : (

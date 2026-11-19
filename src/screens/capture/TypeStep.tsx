@@ -188,7 +188,7 @@ export function TypeStep({
 
       <div className="sticky-cta">
         <button
-          className="btn"
+          className={`btn ${details.type && !observations.standingWater ? 'tinted' : ''}`}
           disabled={!details.type}
           onClick={() => {
             if (!observations.standingWater) {
@@ -200,7 +200,7 @@ export function TypeStep({
             onNext();
           }}
         >
-          {t('common.continue')}
+          {!details.type ? t('type.ctaType') : !observations.standingWater ? t('type.ctaWater') : t('common.continue')}
         </button>
       </div>
     </div>

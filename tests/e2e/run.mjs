@@ -8,9 +8,10 @@ import { makeFakeCamera } from './fake-camera.mjs';
 
 const { chromium, devices } = createRequire(import.meta.url)('playwright');
 const root = fileURLToPath(new URL('../../', import.meta.url));
-const shots = root + 'docs/screenshots/';
+const shots = process.env.AUDIT ? root + 'tests/e2e/.cache/audit/' : root + 'docs/screenshots/';
 const cache = root + 'tests/e2e/.cache/';
 mkdirSync(shots, { recursive: true });
+const auditLog = [];
 mkdirSync(cache, { recursive: true });
 
 const PORT = 4179;
@@ -185,6 +186,22 @@ async function installMocks(context) {
   });
 }
 
+
+/** Audit d'interface (AUDIT=1) : zones tactiles < 44 pt, débordement horizontal, textes < 11 px. */
+async function audit(page, name) {
+  const r = await page.evaluate(() => {
+    const vw = window.innerWidth;
+    const vis = (e) => { const b = e.getBoundingClientRect(); const cs = getComputedStyle(e); return b.width > 0 && b.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && b.bottom > 0 && b.top < innerHeight; };
+    const small = [...document.querySelectorAll('button, a[href], input, [role=radio], [role=button], select')].filter(vis).map((e) => ({ e, b: e.getBoundingClientRect() })).filter(({ b }) => b.width < 44 || b.height < 44)
+      .filter(({ e }) => !(e.closest('.leaflet-container') && !e.classList.contains('trace-handle')) && !e.closest('.dots') && !e.classList.contains('switch') && !(e.type === 'checkbox') && !e.matches('.btn.small, .sheet-close'))
+      .map(({ e, b }) => `${(e.getAttribute('aria-label') || e.textContent || e.className || e.tagName).trim().slice(0, 28)} ${Math.round(b.width)}×${Math.round(b.height)}`);
+    const tiny = [...document.querySelectorAll('body *')].filter((e) => e.childNodes.length && [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()) && vis(e)).filter((e) => parseFloat(getComputedStyle(e).fontSize) < 11).map((e) => `${e.textContent.trim().slice(0, 24)} (${getComputedStyle(e).fontSize})`);
+    const overflow = [...document.querySelectorAll('body *')].filter((e) => vis(e) && e.getBoundingClientRect().right > vw + 2 && !e.closest('.leaflet-container') && !e.closest('.onboarding-pages') && !e.closest('.sheet-backdrop')).slice(0, 3).map((e) => `${e.className || e.tagName}`);
+    return { small, tiny: [...new Set(tiny)].slice(0, 5), overflow };
+  });
+  return { name, ...r };
+}
+
 /* ------------------------------ Scénario ------------------------------- */
 async function main() {
   const y4m = cache + 'drain.y4m';
@@ -202,20 +219,35 @@ async function main() {
     proxy: process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY, bypass: '127.0.0.1,localhost' } : undefined,
   });
   const context = await browser.newContext({
-    ...devices['iPhone 14'],
+    ...devices[process.env.DEVICE || 'iPhone 14'],
+    colorScheme: process.env.SCHEME || 'light',
     locale: 'fr-FR',
     timezoneId: 'Europe/Paris',
     geolocation: { ...HOME, accuracy: 4 },
     permissions: ['geolocation', 'camera'],
     serviceWorkers: 'block',
   });
+  if (process.env.TEXTSCALE) {
+    // Simule une taille de texte système agrandie (Dynamic Type) : html { font-size } × facteur.
+    await context.addInitScript((k) => {
+      document.addEventListener('DOMContentLoaded', () => {
+        const st = document.createElement('style');
+        st.textContent = `html { font-size: ${17 * k}px !important; }`;
+        document.head.appendChild(st);
+      });
+    }, Number(process.env.TEXTSCALE));
+  }
   await installMocks(context);
   const page = await context.newPage();
   const errors = [];
   let lastShot = 'début';
   page.on('pageerror', (e) => errors.push(`[après ${lastShot}] ` + e.message + ' @ ' + (e.stack || '').split('\n').slice(1, 4).join(' <- ')));
   page.on('console', (msg) => msg.type() === 'error' && !/tile|wmts|Failed to load resource/i.test(msg.text()) && errors.push(msg.text()));
-  const shot = (name) => (lastShot = name) && page.screenshot({ path: `${shots}${name}.jpg`, type: 'jpeg', quality: 82 });
+  const shot = async (name) => {
+    lastShot = name;
+    if (process.env.AUDIT) auditLog.push(await audit(page, name));
+    return page.screenshot({ path: `${shots}${name}.jpg`, type: 'jpeg', quality: 82 });
+  };
   const wait = (ms) => page.waitForTimeout(ms);
 
   try {
@@ -258,14 +290,19 @@ async function main() {
 
     // 2. Carte : avaloirs de la zone et rues à explorer
     await page.getByRole('button', { name: 'Ajouter un avaloir' }).waitFor();
-    await page.mouse.move(200, 400);
+    await page.mouse.move(200, 230);
     await page.mouse.down();
-    await page.mouse.move(210, 420, { steps: 4 });
+    await page.mouse.move(210, 250, { steps: 4 });
     await page.mouse.up(); // petit déplacement : déclenche le chargement de la zone affichée
     await wait(3500); // tuiles
     await shot('06-carte');
-    check(await page.getByText(/% des rues couvertes ici/).isVisible(), 'Carte : taux de couverture des rues affiché');
-    check(await page.getByText('Rue à explorer').isVisible() && await page.getByText('Sans photo').isVisible(), 'Carte : légende rues à explorer / sans photo');
+    check(await page.getByText('Repérez un avaloir dans la rue, puis touchez ici').isVisible(), 'Carte : bulle d’aide à la première ouverture');
+    await shot('06b-carte-bulle');
+    await page.getByText('Repérez un avaloir dans la rue, puis touchez ici').click(); // la bulle se ferme au toucher
+    check(await page.getByText(/\d+\s% couvertes/).isVisible(), 'Carte : taux de couverture des rues affiché (légende repliée)');
+    await page.getByRole('button', { name: 'Afficher la légende de la carte' }).click();
+    check(await page.getByText('Rue à explorer').isVisible() && await page.getByText('Sans photo').isVisible(), 'Carte : légende dépliable (rues à explorer / sans photo)');
+    await page.getByRole('button', { name: 'Masquer la légende' }).click();
 
     // 3. Photo
     await page.getByRole('button', { name: 'Ajouter un avaloir' }).click();
@@ -303,7 +340,7 @@ async function main() {
     await page.getByRole('button', { name: 'Rectangle' }).click();
     await page.getByRole('button', { name: 'Fonte / métal' }).click();
     // Question obligatoire sur l'eau stagnante : « Continuer » sans réponse est refusé.
-    await page.getByRole('button', { name: 'Continuer' }).click();
+    await page.getByRole('button', { name: /Il reste une question sur l’eau stagnante/ }).click();
     await wait(700);
     check(await page.getByText('Répondez à cette question : c’est l’information clé pour la mairie.').isVisible(), 'Eau stagnante : réponse obligatoire');
     check(await page.getByText('Quel type d’avaloir ?').isVisible(), 'Eau stagnante : impossible de continuer sans répondre');
@@ -622,6 +659,9 @@ async function main() {
   } finally {
     await browser.close();
     server.kill();
+  }
+  if (process.env.AUDIT) {
+    for (const a of auditLog) if (a.small.length || a.tiny.length || a.overflow.length) console.log(`AUDIT ${a.name}: ${a.small.length ? 'petites zones → ' + a.small.join(' | ') : ''}${a.tiny.length ? ' ; texte <11px → ' + a.tiny.join(' | ') : ''}${a.overflow.length ? ' ; débordement → ' + a.overflow.join(' | ') : ''}`);
   }
   console.log(failures ? `\n${failures} échec(s)` : '\nTous les contrôles sont passés.');
   process.exit(failures ? 1 : 0);

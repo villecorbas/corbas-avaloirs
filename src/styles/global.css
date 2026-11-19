@@ -88,6 +88,16 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+html {
+  font-size: 17px;
+}
+/* iOS : la taille de texte de l'utilisateur (Réglages › Accessibilité › Affichage et luminosité) s'applique. */
+@supports (font: -apple-system-body) {
+  html {
+    font: -apple-system-body;
+  }
+}
+
 html,
 body,
 #root {
@@ -99,7 +109,7 @@ body,
 
 body {
   font-family: var(--font);
-  font-size: 17px;
+  font-size: 1rem;
   line-height: 1.29;
   letter-spacing: -0.41px;
   color: var(--label);
@@ -148,50 +158,50 @@ img {
 
 /* --- Typographie ------------------------------------------------------- */
 .large-title {
-  font-size: 34px;
-  line-height: 41px;
+  font-size: 2rem;
+  line-height: 1.21;
   font-weight: 700;
   letter-spacing: 0.37px;
   margin: 0;
 }
 .title1 {
-  font-size: 28px;
-  line-height: 34px;
+  font-size: 1.647rem;
+  line-height: 1.21;
   font-weight: 700;
   letter-spacing: 0.36px;
   margin: 0;
 }
 .title2 {
-  font-size: 22px;
-  line-height: 28px;
+  font-size: 1.294rem;
+  line-height: 1.27;
   font-weight: 700;
   letter-spacing: 0.35px;
   margin: 0;
 }
 .title3 {
-  font-size: 20px;
-  line-height: 25px;
+  font-size: 1.176rem;
+  line-height: 1.25;
   font-weight: 600;
   letter-spacing: 0.38px;
   margin: 0;
 }
 .headline {
-  font-size: 17px;
+  font-size: 1rem;
   font-weight: 600;
 }
 .subhead {
-  font-size: 15px;
-  line-height: 20px;
+  font-size: 0.8824rem;
+  line-height: 1.33;
   letter-spacing: -0.24px;
 }
 .footnote {
-  font-size: 13px;
-  line-height: 18px;
+  font-size: 0.7647rem;
+  line-height: 1.38;
   letter-spacing: -0.08px;
 }
 .caption {
-  font-size: 12px;
-  line-height: 16px;
+  font-size: 0.7059rem;
+  line-height: 1.33;
   letter-spacing: 0;
 }
 .secondary {
@@ -236,7 +246,7 @@ img {
   flex: 1;
 }
 .section-title {
-  font-size: 13px;
+  font-size: 0.7647rem;
   text-transform: uppercase;
   letter-spacing: -0.08px;
   color: var(--label-2);
@@ -244,10 +254,10 @@ img {
   font-weight: 400;
 }
 .section-footer {
-  font-size: 13px;
+  font-size: 0.7647rem;
   color: var(--label-2);
   margin: 7px 16px 0;
-  line-height: 18px;
+  line-height: 1.38;
 }
 
 /* --- Cartes et listes groupées ----------------------------------------- */
@@ -314,7 +324,7 @@ a.list-row:active {
   min-height: 50px;
   padding: 0 20px;
   border-radius: var(--radius);
-  font-size: 17px;
+  font-size: 1rem;
   font-weight: 600;
   background: var(--accent);
   color: var(--on-accent);
@@ -349,7 +359,7 @@ a.list-row:active {
 .btn.small {
   min-height: 34px;
   padding: 0 14px;
-  font-size: 15px;
+  font-size: 0.8824rem;
   border-radius: 999px;
   width: auto;
 }
@@ -400,7 +410,7 @@ a.list-row:active {
 .segmented button {
   min-height: 32px;
   border-radius: 7px;
-  font-size: 14px;
+  font-size: 0.8235rem;
   font-weight: 500;
   letter-spacing: -0.15px;
   padding: 0 6px;
@@ -419,7 +429,7 @@ a.list-row:active {
   gap: 5px;
   padding: 4px 10px;
   border-radius: 999px;
-  font-size: 13px;
+  font-size: 0.7647rem;
   font-weight: 600;
   background: var(--fill);
   color: var(--label-2);
@@ -487,7 +497,7 @@ a.list-row:active {
   border-radius: 999px;
   background: var(--red);
   color: #fff;
-  font-size: 12px;
+  font-size: 0.7059rem;
   font-weight: 600;
   display: grid;
   place-items: center;
@@ -556,7 +566,7 @@ a.list-row:active {
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   box-shadow: var(--shadow-strong);
-  font-size: 15px;
+  font-size: 0.8824rem;
   font-weight: 600;
   max-width: calc(100% - 32px);
   animation: toast-in 0.45s var(--spring);
@@ -654,7 +664,7 @@ a.list-row:active {
   background: var(--card-2);
 }
 .leaflet-control-attribution {
-  font-size: 10px !important;
+  font-size: 0.5882rem !important;
   background: color-mix(in srgb, var(--bg-elevated) 70%, transparent) !important;
   color: var(--label-2) !important;
   border-radius: 6px 0 0 0;
@@ -669,4 +679,39 @@ a.list-row:active {
   background: var(--blue);
   border: 3px solid #fff;
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+}
+
+/* --- Zones tactiles : au moins 44 × 44 pt (recommandation Apple), sans changer l'aspect --- */
+.btn.small,
+.sheet-close {
+  position: relative;
+}
+.btn.small::after,
+.sheet-close::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+}
+.sheet-close {
+  width: 30px;
+  height: 30px;
+  box-shadow: none;
+  background: var(--fill);
+}
+.sheet-close::after {
+  inset: -8px;
+}
+.segmented button {
+  min-height: 44px;
+}
+.sync-pill,
+.locked-banner {
+  min-height: 44px;
+}
+a.row.hit {
+  min-height: 44px;
+  justify-content: flex-end;
+}
+.sheet:focus {
+  outline: none;
 }

@@ -87,16 +87,41 @@ export function Sheet({
   elevated?: boolean;
   labelledBy?: string;
 }) {
+  const dialog = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    const previous = document.activeElement as HTMLElement | null;
+    const focusables = () =>
+      [...(dialog.current?.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], input, [tabindex]:not([tabindex="-1"])') || [])].filter((el) => el.offsetParent !== null);
+    // Le focus entre dans la fenêtre (lecteur d'écran, clavier), et y reste tant qu'elle est ouverte.
+    (dialog.current as HTMLElement | null)?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') return onClose();
+      if (e.key !== 'Tab') return;
+      const list = focusables();
+      if (!list.length) return e.preventDefault();
+      const first = list[0];
+      const last = list[list.length - 1];
+      if (e.shiftKey && (document.activeElement === first || document.activeElement === dialog.current)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      previous?.focus?.(); // au retour, le focus revient là où il était
+    };
   }, [open, onClose]);
   if (!open) return null;
   return createPortal(
     <div className="sheet-backdrop" onClick={onClose}>
       <div
+        ref={dialog}
+        tabIndex={-1}
         className={`sheet ${elevated ? 'card-bg' : ''}`}
         role="dialog"
         aria-modal="true"
@@ -110,7 +135,7 @@ export function Sheet({
             <h2 className="title3" style={{ flex: 1 }}>
               {title}
             </h2>
-            <button className="icon-btn" style={{ width: 30, height: 30, boxShadow: 'none', background: 'var(--fill)' }} onClick={onClose} aria-label={t('common.close')}>
+            <button className="icon-btn sheet-close" onClick={onClose} aria-label={t('common.close')}>
               <Icon name="close" size={16} stroke={2.4} />
             </button>
           </div>

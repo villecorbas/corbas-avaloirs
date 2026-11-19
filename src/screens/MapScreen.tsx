@@ -42,6 +42,24 @@ export function MapScreen({ onAdd, onOpenProfile, onOpenAccounts }: { onAdd: () 
   });
   const [selected, setSelected] = useState<{ kind: 'osm'; drain: OsmDrain } | { kind: 'mine'; id: string } | null>(null);
   const [following, setFollowing] = useState(true);
+  const [legendOpen, setLegendOpen] = useState(false);
+  // Première ouverture, aucun relevé : une bulle montre où appuyer (disparaît au premier toucher ou relevé).
+  const [coachDone, setCoachDone] = useState(() => {
+    try {
+      return localStorage.getItem('avaloirs.coachMap') === '1';
+    } catch {
+      return false;
+    }
+  });
+  const showCoach = !coachDone && records.length === 0;
+  const dismissCoach = () => {
+    setCoachDone(true);
+    try {
+      localStorage.setItem('avaloirs.coachMap', '1');
+    } catch {
+      /* ignore */
+    }
+  };
   const mapRef = useRef<MapHandle>(null);
   const startCenter = useRef<LatLon>(records[0]?.position || DEFAULT_CENTER);
 
@@ -258,23 +276,39 @@ export function MapScreen({ onAdd, onOpenProfile, onOpenAccounts }: { onAdd: () 
         </div>
       ) : null}
 
-      <div className="map-legend">
-        <span><i style={{ background: '#5e5ce6' }} />{t('map.legendOsm')}</span>
-        <span><i style={{ background: '#fff', borderColor: '#5e5ce6' }} />{t('map.legendNoPhoto')}</span>
-        <span><i style={{ background: '#00a588' }} />{t('map.legendMine')}</span>
-        <span><i style={{ background: '#ff9500' }} />{t('map.legendPending')}</span>
-        {coverageOn && (
-          <>
-            <span><b className="legend-line todo" />{t('map.legendTodo')}</span>
-            <span><b className="legend-line covered" />{t('map.legendCovered')}</span>
-            {coverage && zoom >= MIN_ZOOM && (
-              <span className="legend-ratio rounded-num">{t('map.coverageRatio', { pct: Math.round(coverage.ratio * 100) })}</span>
-            )}
-          </>
-        )}
-      </div>
+      {showCoach ? null : legendOpen ? (
+        <button className="map-legend open" onClick={() => setLegendOpen(false)} aria-expanded="true" aria-label={t('map.legendHide')}>
+          <span><i style={{ background: '#5e5ce6' }} />{t('map.legendOsm')}</span>
+          <span><i style={{ background: '#fff', borderColor: '#5e5ce6' }} />{t('map.legendNoPhoto')}</span>
+          <span><i style={{ background: '#00a588' }} />{t('map.legendMine')}</span>
+          <span><i style={{ background: '#ff9500' }} />{t('map.legendPending')}</span>
+          {coverageOn && (
+            <>
+              <span><b className="legend-line todo" />{t('map.legendTodo')}</span>
+              <span><b className="legend-line covered" />{t('map.legendCovered')}</span>
+            </>
+          )}
+        </button>
+      ) : (
+        <button className="map-legend compact" onClick={() => setLegendOpen(true)} aria-expanded="false" aria-label={t('map.legendShow')}>
+          <Icon name="info" size={15} />
+          <span>{t('map.legendTitle')}</span>
+          {coverage && zoom >= MIN_ZOOM && <span className="legend-ratio rounded-num">· {t('map.coverageShort', { pct: Math.round(coverage.ratio * 100) })}</span>}
+        </button>
+      )}
 
-      <button className="fab" onClick={onAdd}>
+      {showCoach && (
+        <div className="coach" role="note" onClick={dismissCoach}>
+          {t('map.coach')}
+        </div>
+      )}
+      <button
+        className={`fab ${showCoach ? 'pulse' : ''}`}
+        onClick={() => {
+          dismissCoach();
+          onAdd();
+        }}
+      >
         <Icon name="plus" size={24} stroke={2.8} />
         {t('map.add')}
       </button>
