@@ -114,8 +114,8 @@ export function AccountWizard({ onDone, doneLabel }: { onDone: () => void; doneL
       {/* ------------------------------ Étape 1 : choix ------------------------------ */}
       {configured && step === 1 && view === 'choice' && (
         <div className="stack slide-in">
-          <WizardArt icon="person" />
           <h1 className="title1 center">{t('wizard.title')}</h1>
+          <WhyConnect />
           <p className="subhead secondary center" style={{ margin: 0 }}>
             {t('wizard.intro')}
           </p>
@@ -188,11 +188,8 @@ export function AccountWizard({ onDone, doneLabel }: { onDone: () => void; doneL
             </span>
           </div>
           <p className="subhead center" style={{ margin: 0, fontWeight: 600 }}>{t('wizard.backInApp')}</p>
-          <WizardArt icon="photo" />
           <h1 className="title1 center">{t('wizard.photosTitle')}</h1>
-          <p className="subhead secondary center" style={{ margin: 0 }}>
-            {t('wizard.photosText')}
-          </p>
+          <WhyConnect variant="photos" />
           {!pnx && (
             <>
               <button className="btn" onClick={goPanoramax} disabled={busy}>
@@ -291,6 +288,40 @@ export function PanoramaxWaiting({ claimUrl, onCancel }: { claimUrl: string; onC
           {t('common.cancel')}
         </button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * « Pourquoi se connecter ? » : un relevé qui reste sur le téléphone ne sert à personne ;
+ * connecté, il est envoyé sur la carte collaborative (OpenStreetMap) et la photothèque (Panoramax).
+ */
+export function WhyConnect({ variant = 'osm', compact = false }: { variant?: 'osm' | 'photos'; compact?: boolean }) {
+  const photos = variant === 'photos';
+  return (
+    <div className="card why-connect">
+      {!compact && <div className="headline">{t('why.title')}</div>}
+      <div className="why-flow" aria-hidden="true">
+        <div>
+          <span className="why-icon">📱</span>
+          <span className="caption">{t(photos ? 'why.phonePhotos' : 'why.phone')}</span>
+        </div>
+        <span className="why-arrow">➜</span>
+        <div>
+          <span className="why-icon">{photos ? '🖼️' : '🗺️'}</span>
+          <span className="caption">{t(photos ? 'why.libraryPhotos' : 'why.map')}</span>
+        </div>
+        <span className="why-arrow">➜</span>
+        <div>
+          <span className="why-icon">🏛️👥</span>
+          <span className="caption">{t('why.everyone')}</span>
+        </div>
+      </div>
+      <p className="footnote" style={{ margin: 0 }}>{t(photos ? 'why.textPhotos' : 'why.text')}</p>
+      <p className="footnote why-warn">
+        <Icon name="warning" size={14} style={{ verticalAlign: '-2px', marginRight: 4 }} />
+        {t(photos ? 'why.warnPhotos' : 'why.warn')}
+      </p>
     </div>
   );
 }

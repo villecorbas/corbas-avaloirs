@@ -339,7 +339,9 @@ async function main() {
     await page.getByText('Votre compte de contributeur').waitFor();
     await wait(900);
     check(await page.getByText('la création du compte se fait sur le site d’OpenStreetMap').isVisible(), 'Assistant : prévient que le compte se crée sur le site d’OpenStreetMap');
-    check(await page.getByRole('button', { name: 'Créer mon compte gratuit' }).isVisible() && await page.getByRole('button', { name: 'J’ai déjà un compte OpenStreetMap' }).isVisible(), 'Assistant : créer un compte ou se connecter');
+    check(await page.getByRole('button', { name: 'Créer mon compte et publier mes relevés' }).isVisible() && await page.getByRole('button', { name: 'J’ai déjà un compte : me connecter et publier' }).isVisible(), 'Assistant : créer un compte ou se connecter');
+    check(await page.getByText('Un relevé qui reste sur votre téléphone ne sert à personne').isVisible(), 'Assistant : explique l’intérêt de se connecter (carte collaborative centralisée)');
+    check(await page.getByText('Sans connexion, vos relevés restent sur ce téléphone').isVisible(), 'Assistant : prévient que sans connexion les relevés ne servent pas à la communauté');
     await shot('04b-accueil-compte');
     await page.getByRole('button', { name: 'Plus tard' }).click();
     // Pas de rappel immédiat après « Plus tard » ; il revient plus tard.
@@ -367,7 +369,7 @@ async function main() {
     // 9. Assistant de compte : création d'un compte OSM (inscription simulée) puis Panoramax
     await page.getByRole('button', { name: 'Connecter mes comptes' }).click();
     await page.getByText('Votre compte de contributeur').waitFor();
-    await page.getByRole('button', { name: 'Créer mon compte gratuit' }).click();
+    await page.getByRole('button', { name: 'Créer mon compte et publier mes relevés' }).click();
     await page.getByText('Votre compte en 3 étapes').waitFor();
     await wait(500);
     await shot('17a-compte-inscription');
@@ -379,6 +381,7 @@ async function main() {
     check(state.tokenRequest?.code === 'E2E-CODE' && (state.tokenRequest?.code_verifier || '').length >= 43, 'OAuth : échange du code avec le vérificateur PKCE');
     check(await page.getByText('Connecté en tant que Camille_Avaloirs').isVisible(), 'Assistant repris après la redirection, compte connecté');
     await wait(500);
+    check(await page.getByText('Sans cette connexion, vos photos restent sur ce téléphone').isVisible(), 'Étape photos : explique l’intérêt de Panoramax');
     await shot('17b-compte-photos');
     const popupPromise = context.waitForEvent('page');
     await page.getByRole('button', { name: 'Autoriser la publication des photos' }).click();

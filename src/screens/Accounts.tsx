@@ -19,7 +19,7 @@ import {
   panoramaxLogout,
 } from '../lib/panoramax';
 import { useAuth, usePanoramaxClaimPolling } from '../lib/store';
-import { PanoramaxWaiting } from './AccountWizard';
+import { PanoramaxWaiting, WhyConnect } from './AccountWizard';
 
 /** Section « Comptes » : OpenStreetMap (OAuth 2) puis Panoramax (jeton réclamé). */
 export function Accounts() {
@@ -63,7 +63,8 @@ export function Accounts() {
   return (
     <>
       <h3 className="section-title">{t('accounts.title')}</h3>
-      <div className="list">
+      {!(osm && pnx?.user) && <WhyConnect compact />}
+      <div className="list" style={{ marginTop: 10 }}>
         {/* ------------------------- OpenStreetMap ------------------------- */}
         <div className="list-row" style={{ alignItems: 'flex-start', paddingTop: 14, paddingBottom: 14 }}>
           <span className="icon-tile" style={{ background: '#7ebc6f' }}>
