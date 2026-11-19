@@ -1,6 +1,6 @@
 export interface AppConfig {
   campaignName: string;
-  commune: { insee: string; name: string; estimatedDrains: number };
+  commune: { insee: string; name: string; estimatedDrains: number; /** Centre de la commune : la carte s'y ouvre quand on n'a pas de position (ordinateur). */ center?: { lat: number; lon: number } };
   dailyGoal: number;
   openstreetmap: {
     environment: 'production' | 'dev';

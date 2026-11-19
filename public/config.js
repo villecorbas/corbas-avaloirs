@@ -14,6 +14,8 @@ window.AVALOIRS_CONFIG = {
     name: 'Corbas',
     // Nombre estimé d'avaloirs sur la commune : sert à la jauge collective.
     estimatedDrains: 1500,
+    // Centre de la commune (la carte s'y ouvre sur ordinateur, sans GPS).
+    center: { lat: 45.6697, lon: 4.8967 },
   },
 
   // Objectif quotidien individuel (anneau de progression).

@@ -61,7 +61,8 @@ export function MapScreen({ onAdd, onOpenProfile, onOpenAccounts }: { onAdd: () 
     }
   };
   const mapRef = useRef<MapHandle>(null);
-  const startCenter = useRef<LatLon>(records[0]?.position || DEFAULT_CENTER);
+  const communeCenter = getConfig().commune.center;
+  const startCenter = useRef<LatLon>(records[0]?.position || communeCenter || DEFAULT_CENTER);
 
   useEffect(() => {
     void cachedArea().then((a) => a && setArea((cur) => cur || a));
@@ -188,7 +189,7 @@ export function MapScreen({ onAdd, onOpenProfile, onOpenAccounts }: { onAdd: () 
       <MapView
         ref={mapRef}
         center={loc.fix || startCenter.current}
-        zoom={loc.fix || records.length ? 18 : 6}
+        zoom={loc.fix || records.length ? 18 : communeCenter ? 16 : 6}
         layer={layer}
         markers={markers}
         lines={lines}
