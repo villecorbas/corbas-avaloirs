@@ -533,6 +533,7 @@ const en: Dict = {
   },
 
   inviteCard: {
+    titleMore: '{count} drains logged: great work! 🎉',
     title: 'Already 2 drains: well done! 🎉',
     text: 'Every neighbour who joins means more drains surveyed for the town. Invite them and earn points.',
     perInvite: 'per invitation sent',

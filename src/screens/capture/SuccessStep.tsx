@@ -4,7 +4,7 @@ import { t } from '../../i18n';
 import { Icon } from '../../components/Icon';
 import { Bar, Confetti, CountUp, Ring } from '../../components/ui';
 import { InviteCard, LockedCard } from '../../components/LockedReminder';
-import { invitePromptShown, markInvitePromptShown } from '../../lib/inviteLog';
+import { invitePromptDue, lastInvitePrompt, markInvitePrompt } from '../../lib/inviteLog';
 import type { BadgeState, PointLine, Progress } from '../../lib/gamification';
 import { panoramaxReady } from '../../lib/panoramax';
 import { getOsmAuth } from '../../lib/osm';
@@ -32,10 +32,11 @@ export function SuccessStep({
   const levelUp = after.level.level > before.level.level;
   const connected = !!getOsmAuth() && panoramaxReady();
   // Rappel unique après le deuxième avaloir, tant qu'aucune invitation n'a été envoyée.
-  const [showInvite] = useState(() => after.count === 2 && after.invites === 0 && !invitePromptShown());
+  const [inviteMilestone] = useState(() => invitePromptDue(after.count, after.invites, lastInvitePrompt()));
+  const showInvite = inviteMilestone !== null;
   useEffect(() => {
-    if (showInvite) markInvitePromptShown();
-  }, [showInvite]);
+    if (inviteMilestone !== null) markInvitePrompt(inviteMilestone);
+  }, [inviteMilestone]);
   const [detail, setDetail] = useState(false);
   const cheer = useMemo(() => {
     const list = t('success.cheers').split('|');
@@ -133,7 +134,7 @@ export function SuccessStep({
         </button>
       ) : null}
 
-      {showInvite && <InviteCard onInvite={onInvite} />}
+      {showInvite && <InviteCard onInvite={onInvite} count={after.count} />}
 
       </div>
       <div className="success-actions">

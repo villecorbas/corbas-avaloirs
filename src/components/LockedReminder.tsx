@@ -85,13 +85,13 @@ export function LockedNudge({ count, points, onConnect, onLater }: { count: numb
 }
 
 /** Rappel après le deuxième avaloir : inviter ses voisins rapporte des points. */
-export function InviteCard({ onInvite }: { onInvite: () => void }) {
+export function InviteCard({ onInvite, count = 2 }: { onInvite: () => void; count?: number }) {
   return (
     <div className="card invite-card pop" style={{ marginTop: 16, animationDelay: '.6s' }}>
       <div className="row" style={{ alignItems: 'flex-start' }}>
         <span className="reward-star big" aria-hidden="true">🤝</span>
         <div style={{ flex: 1 }}>
-          <div className="headline">{t('inviteCard.title')}</div>
+          <div className="headline">{count > 2 ? t('inviteCard.titleMore', { count }) : t('inviteCard.title')}</div>
           <div className="footnote secondary">{t('inviteCard.text')}</div>
         </div>
       </div>

@@ -84,17 +84,33 @@ export function wasInvited(): boolean {
 
 const PROMPT_KEY = 'avaloirs.invitePrompt';
 
-export function invitePromptShown(): boolean {
+/** Paliers de relevés où l'on rappelle d'inviter ses voisins (une fois par palier). */
+export const INVITE_MILESTONES = [2, 5, 10, 20, 40, 80];
+
+/**
+ * Faut-il proposer d'inviter maintenant ? `last` = dernier palier déjà proposé.
+ * Au 2e avaloir seulement si l'on n'a encore invité personne ; ensuite à chaque palier,
+ * tant qu'il reste des points d'invitation à gagner.
+ */
+export function invitePromptDue(count: number, invites: number, last: number): number | null {
+  const m = [...INVITE_MILESTONES].reverse().find((x) => x <= count);
+  if (!m || m <= last) return null;
+  if (m === 2 ? invites > 0 : invites >= INVITE_TOTAL_CAP) return null;
+  return m;
+}
+
+export function lastInvitePrompt(): number {
   try {
-    return localStorage.getItem(PROMPT_KEY) === '1';
+    const v = localStorage.getItem(PROMPT_KEY);
+    return v === '1' ? 2 : Number(v) || 0; // ancienne valeur « 1 » = palier 2 déjà proposé
   } catch {
-    return false;
+    return 0;
   }
 }
 
-export function markInvitePromptShown() {
+export function markInvitePrompt(milestone: number) {
   try {
-    localStorage.setItem(PROMPT_KEY, '1');
+    localStorage.setItem(PROMPT_KEY, String(milestone));
   } catch {
     /* ignore */
   }

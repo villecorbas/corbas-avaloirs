@@ -533,6 +533,7 @@ const fr: Dict = {
   },
 
   inviteCard: {
+    titleMore: '{count} avaloirs relevés : quel travail ! 🎉',
     title: 'Déjà 2 avaloirs : bravo ! 🎉',
     text: 'Chaque voisin qui rejoint la chasse, ce sont des avaloirs de plus relevés pour la commune. Invitez-les et gagnez des points.',
     perInvite: 'par invitation envoyée',

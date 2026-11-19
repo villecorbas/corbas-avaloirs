@@ -64,3 +64,24 @@ describe('Invitations : points', () => {
     expect(later.lines.map((l) => l.key)).not.toContain('invited');
   });
 });
+
+import { invitePromptDue } from '../../src/lib/inviteLog';
+describe('Rappel d’invitation par paliers', () => {
+  it('2e avaloir : seulement si personne n’a été invité', () => {
+    expect(invitePromptDue(2, 0, 0)).toBe(2);
+    expect(invitePromptDue(2, 1, 0)).toBeNull();
+  });
+  it('un rappel par palier (5, 10, 20…), jamais deux fois', () => {
+    expect(invitePromptDue(3, 0, 2)).toBeNull();
+    expect(invitePromptDue(5, 0, 2)).toBe(5);
+    expect(invitePromptDue(5, 3, 2)).toBe(5);
+    expect(invitePromptDue(6, 0, 5)).toBeNull();
+    expect(invitePromptDue(10, 0, 5)).toBe(10);
+  });
+  it('plus de rappel quand le plafond de points d’invitation est atteint', () => {
+    expect(invitePromptDue(20, 20, 10)).toBeNull();
+  });
+  it('1er avaloir : rien', () => {
+    expect(invitePromptDue(1, 0, 0)).toBeNull();
+  });
+});
