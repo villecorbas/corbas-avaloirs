@@ -40,7 +40,8 @@ export function TypeStep({
     onChange(next, observations);
   };
   const [missing, setMissing] = useState(false);
-  const [more, setMore] = useState(false);
+  // Les détails déjà renseignés (retour depuis le récapitulatif) restent visibles.
+  const [more, setMore] = useState(() => !!(details.shape || details.material || details.hasCover || observations.clogged));
   const waterRef = useRef<HTMLHeadingElement>(null);
   const tri = (v: TriState | undefined, key: keyof Observations) => (value: TriState) =>
     onChange(details, { ...observations, [key]: v === value ? undefined : value });
