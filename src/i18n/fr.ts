@@ -318,6 +318,8 @@ const fr: Dict = {
   },
 
   success: {
+    showDetail: 'Voir le détail',
+    hideDetail: 'Masquer le détail',
     cheers: 'Bravo !|Excellent !|Bien vu !|Super !|Et un de plus !',
     saved: 'Relevé enregistré sur votre téléphone.',
     goal: 'Plus que {left} pour l’objectif du jour',

@@ -318,6 +318,8 @@ const en: Dict = {
   },
 
   success: {
+    showDetail: 'See breakdown',
+    hideDetail: 'Hide breakdown',
     cheers: 'Well done!|Excellent!|Nice spot!|Great!|One more!',
     saved: 'Survey saved on your phone.',
     goal: 'Only {left} to go for today’s goal',

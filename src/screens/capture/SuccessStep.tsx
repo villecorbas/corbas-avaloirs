@@ -36,6 +36,7 @@ export function SuccessStep({
   useEffect(() => {
     if (showInvite) markInvitePromptShown();
   }, [showInvite]);
+  const [detail, setDetail] = useState(false);
   const cheer = useMemo(() => {
     const list = t('success.cheers').split('|');
     return list[Math.floor(Math.random() * list.length)];
@@ -57,13 +58,20 @@ export function SuccessStep({
       <div className="points-burst rounded-num pop" style={{ animationDelay: '.15s' }}>
         +<CountUp value={points.total} /> <span>{t('common.pts')}</span>
       </div>
-      <div className="points-lines">
-        {points.lines.map((l) => (
-          <span key={l.key} className="chip">
-            {t(`points.${l.key}`)} +{l.points}
-          </span>
-        ))}
-      </div>
+      {points.lines.length > 1 && (
+        <button className="btn plain small" aria-expanded={detail} onClick={() => setDetail(!detail)}>
+          {detail ? t('success.hideDetail') : t('success.showDetail')}
+        </button>
+      )}
+      {detail && (
+        <div className="points-lines">
+          {points.lines.map((l) => (
+            <span key={l.key} className="chip">
+              {t(`points.${l.key}`)} +{l.points}
+            </span>
+          ))}
+        </div>
+      )}
 
       {levelUp && (
         <div className="card row pop levelup" style={{ marginTop: 16, animationDelay: '.3s' }}>
