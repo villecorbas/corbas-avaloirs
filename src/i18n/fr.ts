@@ -192,6 +192,7 @@ const fr: Dict = {
   },
 
   duplicate: {
+    live: 'Attention : un avaloir est déjà cartographié à {m} m d’ici. Passez au suivant, sauf si c’en est un autre.',
     title: 'Avaloir déjà cartographié',
     text: 'Un avaloir « {type} » est déjà présent sur OpenStreetMap à {m} m. Est-ce le même ?',
     same: 'C’est le même : ajouter ma photo',

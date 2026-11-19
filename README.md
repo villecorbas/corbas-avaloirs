@@ -268,3 +268,9 @@ Structure : `src/lib/` (métier : `taxonomy.ts`, `osm.ts`, `panoramax.ts`, `sync
 - **Classement** : basé sur le dernier contributeur de chaque objet dans OSM (pas de serveur dédié).
 - **Caniveaux à grille** : le schéma `waterway=drainage_gutter` est proposé par la communauté mais pas encore formalisé (voir §3). Le sens d'écoulement repose sur l'appréciation du contributeur ; un caniveau de plus de 30 m doit être relevé en plusieurs tronçons.
 - Les données restent sur le téléphone tant qu'elles ne sont pas publiées : l'application demande au navigateur de ne pas les effacer, mais il est conseillé de se connecter rapidement.
+
+
+## Doublons et vue d'ensemble de la commune
+
+- **Carte principale :** tous les avaloirs de la commune déjà présents dans OpenStreetMap sont affichés dès l'ouverture, quel que soit le zoom (liste de la commune mise en cache, rafraîchie toutes les 6 h), en plus de la zone affichée. Les relevés de l'utilisateur apparaissent par-dessus.
+- **Alerte de doublon :** pendant le positionnement, un bandeau orange prévient en direct dès qu'un avaloir déjà cartographié se trouve à moins de 8 m. À la validation, une feuille propose « C'est le même : ajouter ma photo » ou « C'est un autre ». La détection s'appuie sur toute la commune, pas seulement sur un rayon de 450 m, et fonctionne avec le cache hors ligne.

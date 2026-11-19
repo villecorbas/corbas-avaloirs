@@ -10,6 +10,8 @@ import { DRAIN_TYPES, needsTrace } from '../../lib/taxonomy';
 import { refreshPermission, useLocation } from '../../lib/location';
 import { cachedNearbyDrains, fetchNearbyDrains, type OsmDrain } from '../../lib/overpass';
 import { useRecords } from '../../lib/store';
+import { useCommuneDrains, useMergedDrains } from '../../lib/communeDrains';
+import { useCommune } from '../ProfileScreen';
 import { syncNow } from '../../lib/sync';
 import { isOsmMappable, typeFromTags, type DrainDetails, type DrainMaterial, type DrainShape, type Observations } from '../../lib/taxonomy';
 import { PhotoStep, type PhotoResult } from './PhotoStep';
@@ -39,7 +41,8 @@ export function CaptureFlow({ onClose, onOpenAccounts, onOpenInvite }: { onClose
   const [obs, setObs] = useState<Observations>({});
   const [address, setAddress] = useState<Address>();
   const [addrLoading, setAddrLoading] = useState(false);
-  const [nearby, setNearby] = useState<OsmDrain[]>([]);
+  const [nearbyLocal, setNearby] = useState<OsmDrain[]>([]);
+  const nearby = useMergedDrains(nearbyLocal, useCommuneDrains(useCommune()?.insee));
   const [saving, setSaving] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
   const [result, setResult] = useState<{ points: { total: number; lines: PointLine[] }; before: Progress; after: Progress; unlocked: BadgeState[] }>();

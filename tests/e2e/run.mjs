@@ -458,6 +458,7 @@ async function main() {
     await page.getByRole('button', { name: 'Utiliser la photo' }).click();
     await page.getByRole('button', { name: 'Je suis au-dessus' }).click();
     await page.getByRole('button', { name: 'Valider la position' }).waitFor({ timeout: 12000 });
+    check(await page.getByText(/déjà cartographié à/).isVisible(), 'Doublon : alerte en direct avant même la validation');
     await page.getByRole('button', { name: 'Valider la position' }).click();
     await page.getByText('Avaloir déjà cartographié').waitFor();
     await wait(500);

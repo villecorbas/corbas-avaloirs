@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getConfig } from '../lib/config';
+import { useCommuneDrains, useMergedDrains } from '../lib/communeDrains';
+import { useCommune } from './ProfileScreen';
 import { t } from '../i18n';
 import { Icon } from '../components/Icon';
 import { MapView, type BaseLayer, type MapHandle, type MapLine, type MapMarker } from '../components/MapView';
@@ -113,11 +115,9 @@ export function MapScreen({ onAdd, onOpenProfile, onOpenAccounts }: { onAdd: () 
       .finally(() => seq === requestSeq.current && setLoadingArea(false));
   }, []);
 
-  const drains = useMemo(() => {
-    if (!area) return nearby;
-    const seen = new Set(area.drains.map((d) => `${d.type}:${d.id}`));
-    return [...area.drains, ...nearby.filter((d) => !seen.has(`${d.type ?? 'node'}:${d.id}`))];
-  }, [area, nearby]);
+  // Tous les avaloirs de la commune (cache + rafraîchissement) + ceux de la zone affichée.
+  const communeDrains = useCommuneDrains(useCommune()?.insee);
+  const drains = useMergedDrains(area?.drains ?? [], nearby, communeDrains);
 
   // Rues à explorer : tronçons sans avaloir connu (OSM ou relevé local) à moins de 35 m.
   const coverage = useMemo(() => {

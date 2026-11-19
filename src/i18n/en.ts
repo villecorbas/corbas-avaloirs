@@ -192,6 +192,7 @@ const en: Dict = {
   },
 
   duplicate: {
+    live: 'Careful: a drain is already mapped {m} m from here. Move on to the next one, unless this is a different one.',
     title: 'Drain already mapped',
     text: 'A “{type}” drain is already on OpenStreetMap {m} m away. Is it the same one?',
     same: 'Same one: add my photo',

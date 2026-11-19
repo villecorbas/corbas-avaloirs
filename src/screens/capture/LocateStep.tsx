@@ -168,6 +168,25 @@ export function LocateStep({
     adjustMeters: Math.round(moved * 10) / 10,
   });
 
+  // Alerte en direct : un avaloir déjà cartographié tout près (avant même de valider).
+  const alreadyMapped = useMemo(() => {
+    const p = phase === 'adjust' ? center : loc.fix;
+    if (!p || phase === 'measuring') return null;
+    let best: number | null = null;
+    for (const d of nearby) {
+      const dd = distanceToDrain(p, d);
+      if (dd <= 8 && (best === null || dd < best)) best = dd;
+    }
+    return best;
+  }, [phase, center, loc.fix, nearby]);
+  const mappedBanner =
+    alreadyMapped !== null ? (
+      <div className="card row mapped-warning" role="alert">
+        <Icon name="warning" style={{ color: 'var(--orange)', flex: 'none' }} />
+        <span className="footnote">{t('duplicate.live', { m: formatNumber(alreadyMapped, 0) })}</span>
+      </div>
+    ) : null;
+
   const validate = () => {
     if (!center || !fix) return;
     const radius = Math.max(4, Math.min(fix.acc, 8));
@@ -272,6 +291,7 @@ export function LocateStep({
 
         {phase === 'approach' && !blocked && (
           <div className="stack slide-in">
+            {mappedBanner}
             <div className="row" style={{ alignItems: 'flex-start' }}>
               <StandOverIllustration />
               <div style={{ flex: 1 }}>
@@ -322,6 +342,7 @@ export function LocateStep({
 
         {phase === 'adjust' && fix && (
           <div className="stack slide-in">
+            {mappedBanner}
             <div className="row">
               <span className="chip green">
                 <Icon name="check" size={15} stroke={2.6} />
