@@ -110,17 +110,15 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
           </div>
           <h1 className="title1 center">{t('explain.drainTitle')}</h1>
           <p className="subhead secondary center">{t('explain.drainText')}</p>
-          <p className="subhead center mission">{t('explain.mission')}</p>
         </section>
 
         <section className="onboarding-page">
           <h1 className="title1 center" style={{ marginTop: 24 }}>{t('onboarding.p2Title')}</h1>
           <div className="how-steps">
             {[
-              { icon: 'camera' as const, color: 'var(--orange)', key: 'step1' },
-              { icon: 'location' as const, color: 'var(--blue)', key: 'step2' },
-              { icon: 'grate' as const, color: 'var(--accent)', key: 'step3' },
-              { icon: 'cloudUp' as const, color: 'var(--indigo)', key: 'step4' },
+              { icon: 'crosshair' as const, color: 'var(--blue)', key: 'step1' },
+              { icon: 'map' as const, color: 'var(--accent)', key: 'step2' },
+              { icon: 'camera' as const, color: 'var(--orange)', key: 'step3' },
             ].map((s, i) => (
               <div key={s.key} className="how-step slide-in" style={{ animationDelay: `${i * 0.08}s` }}>
                 <span className="icon-tile" style={{ background: s.color, width: 44, height: 44, borderRadius: 12 }}>
@@ -133,7 +131,8 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
               </div>
             ))}
           </div>
-          <p className="footnote secondary center" style={{ marginTop: 14 }}>🏅 {t('onboarding.p3Short')}</p>
+          <p className="subhead center mission">{t('onboarding.missionDone')}</p>
+          <p className="footnote secondary center" style={{ marginTop: 6 }}>🏅 {t('onboarding.p3Short')}</p>
         </section>
 
         {HAS_PLEDGE && (

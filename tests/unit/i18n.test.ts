@@ -43,7 +43,7 @@ describe('Traductions', () => {
       ...['pending', 'running', 'done', 'error', 'skipped', 'published'].map((k) => `status.${k}`),
       ...['osm_rate_limited', 'osm_auth', 'panoramax_auth', 'network', 'not_mappable', 'no_photo', 'offline', 'generic'].map((k) => `errors.${k}`),
       ...['ok', 'blurry', 'dark'].map((k) => `photo.verdict.${k}`),
-      ...['step1', 'step2', 'step3', 'step4'].flatMap((k) => [`onboarding.${k}Title`, `onboarding.${k}Text`]),
+      ...['step1', 'step2', 'step3'].flatMap((k) => [`onboarding.${k}Title`, `onboarding.${k}Text`]),
       ...['map', 'records', 'profile', 'settings'].map((k) => `tabs.${k}`),
     ];
     expect(dynamic.filter((k) => !frKeys.has(k))).toEqual([]);

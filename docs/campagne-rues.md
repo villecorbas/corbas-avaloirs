@@ -12,7 +12,7 @@ Objectif : inciter les habitants à relever les avaloirs d'une ou plusieurs rues
 
 ## Dans le tunnel du premier lancement
 
-Accueil en 5 pages : 1) le moustique tigre, 2) « Un avaloir, c'est quoi ? » avec **LA MISSION** en évidence (« Votre mission : photographier les avaloirs de votre rue, un par un. »), 3) les étapes d'un relevé, 4) **« Quelle est votre rue ? »** (engagement), 5) les autorisations (localisation, appareil photo).
+Accueil en 5 pages : 1) le moustique tigre (il se reproduit dans un peu d'eau stagnante, y compris dans la rue, en particulier dans les avaloirs d'eau de pluie), 2) « Un avaloir, c'est quoi ? » (la problématique : ils ne sont pas cartographiés, donc on ne sait pas où aller pour les traiter), 3) **« Votre mission »** : repérer les avaloirs, les cartographier, les photographier, « une trentaine de secondes par avaloir, et c'est fait ! », 4) **« Quelle est votre rue ? »** (engagement), 5) les autorisations (localisation, appareil photo).
 
 - L'engagement arrive donc après les explications sur les objectifs et **avant** les autorisations. On cherche sa rue par son nom ; **+5 points par rue** (jusqu'à 3 rues) et le badge **« Voisin engagé »**. Facultatif : tant qu'aucune rue n'est choisie, le bouton de la page indique « Plus tard ».
 - « Passer » dans l'accueil mène directement à cette page d'engagement (puis aux autorisations).
