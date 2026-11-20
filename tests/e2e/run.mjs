@@ -279,11 +279,23 @@ async function main() {
     await shot('01b-accueil-avaloir');
     check(await page.getByText(/avale l’eau de pluie de la rue/).isVisible(), 'Introduction : définition d’un avaloir');
     await page.getByRole('button', { name: 'Continuer' }).click();
-    check(await page.getByText('Votre mission : les repérer, un par un.').isVisible(), 'Introduction : mission des utilisateurs');
+    check(await page.getByText('Votre mission : photographier les avaloirs de votre rue, un par un.').isVisible(), 'Introduction : la mission est énoncée directement (photographier les avaloirs de sa rue)');
     check(await page.getByRole('img', { name: /Coupe d’un avaloir/ }).isVisible(), 'Introduction : schéma en coupe d’un avaloir');
     await page.getByRole('button', { name: 'Continuer' }).click();
     await wait(700);
     await shot('02-accueil-etapes');
+    await page.getByRole('button', { name: 'Continuer' }).click();
+    // Engagement sur sa rue : dans l'accueil, AVANT la page des autorisations
+    await page.getByText('Quelle est votre rue ?').waitFor();
+    await wait(900);
+    check(await page.getByText(/Votre mission\s:\sphotographier tous les avaloirs de votre rue/).isVisible(), 'Engagement : la mission est répétée clairement');
+    check(await page.getByText(/Gagnez \+5\spts par rue choisie/).isVisible(), 'Engagement : une rue choisie rapporte des points');
+    check(await page.getByRole('button', { name: 'Plus tard' }).isVisible(), 'Engagement : facultatif (le bouton devient « Plus tard » tant qu’aucune rue n’est choisie)');
+    await page.getByRole('searchbox', { name: 'Chercher ma rue' }).fill('vigne');
+    await page.getByRole('button', { name: 'Je m’engage' }).first().click();
+    await page.getByText(/Engagement pris\s:\s\+5\spts/).waitFor({ timeout: 5000 });
+    check(true, 'Engagement : choix d’une rue, +5 pts annoncés');
+    await shot('00-premiere-rue');
     await page.getByRole('button', { name: 'Continuer' }).click();
     await wait(600);
     await page.getByRole('button', { name: 'Autoriser' }).first().click();
@@ -292,19 +304,6 @@ async function main() {
     await shot('04-accueil-autorisations');
     check(!(await page.getByText('Votre compte de contributeur').isVisible().catch(() => false)), 'Accueil : aucune demande de compte avant le premier avaloir');
     await page.getByRole('button', { name: 'C’est parti !' }).click();
-    // Tunnel du premier lancement : « Quelle est votre rue ? » (engagement avec points)
-    await page.getByText('Quelle est votre rue ?').waitFor();
-    check(await page.getByText(/Gagnez \+5\spts par rue choisie/).isVisible(), 'Première utilisation : l’engagement sur une rue rapporte des points');
-    check(await page.getByRole('button', { name: 'Plus tard' }).isVisible(), 'Première utilisation : l’engagement reste facultatif (« Plus tard »)');
-    await page.getByRole('searchbox', { name: 'Chercher ma rue' }).fill('vigne');
-    await page.getByRole('button', { name: 'Je m’engage' }).first().click();
-    await page.getByText(/Engagement pris\s:\s\+5\spts/).waitFor({ timeout: 5000 });
-    check(true, 'Première utilisation : choix d’une rue, +5 pts annoncés');
-    await shot('00-premiere-rue');
-    await page.getByRole('button', { name: 'Continuer' }).click();
-    // Appli déjà utilisée (accueil passé) : l’étape « votre rue » n’apparaît jamais seule au lancement
-    await page.evaluate(() => localStorage.removeItem('avaloirs.pledgeSeen'));
-    await page.reload();
     await page.getByText('Installer l’application').waitFor();
     check(!(await page.getByText('Quelle est votre rue ?').isVisible().catch(() => false)), 'Tunnel : l’engagement n’apparaît qu’à la fin de l’accueil, pas au lancement d’une appli déjà utilisée');
     await wait(600);

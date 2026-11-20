@@ -7,10 +7,16 @@ import { enableCompass, requestLocationPermission } from '../lib/location';
 import { platform } from '../lib/store';
 import { invitedBy } from '../lib/invite';
 import { DrainCutaway, ExplainMosquito } from './Explainer';
+import { CampaignContent } from './CampaignScreen';
+import { useMyStreets } from '../lib/commitments';
 
 const PAGE_KEY = 'avaloirs.onboardingPage';
-const PAGES = 4;
-const PERMISSIONS_PAGE = 3; // dernière page : le compte OpenStreetMap n'est demandé qu'après le premier avaloir relevé
+// Accueil : le moustique, l'avaloir et LA MISSION, les étapes, [l'engagement sur sa rue], puis les autorisations.
+// L'engagement n'est proposé que si la commune est configurée (liste officielle des rues).
+const HAS_PLEDGE = !!getConfig().commune.insee;
+const PAGES = HAS_PLEDGE ? 5 : 4;
+const PLEDGE_PAGE = HAS_PLEDGE ? 3 : -1;
+const PERMISSIONS_PAGE = PAGES - 1; // dernière page : le compte OpenStreetMap n'est demandé qu'après le premier avaloir relevé
 
 function savedPage(): number {
   try {
@@ -39,6 +45,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
       /* ignore */
     }
   }, [page]);
+  const myStreets = useMyStreets();
   const [geo, setGeo] = useState<Perm>('idle');
   const [cam, setCam] = useState<Perm>('idle');
   const [compass, setCompass] = useState<Perm>('idle');
@@ -73,8 +80,8 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
 
   return (
     <div className="onboarding">
-      {page < PERMISSIONS_PAGE && (
-        <button className="btn plain onboarding-skip" onClick={() => goTo(PERMISSIONS_PAGE)}>
+      {page < (HAS_PLEDGE ? PLEDGE_PAGE : PERMISSIONS_PAGE) && (
+        <button className="btn plain onboarding-skip" onClick={() => goTo(HAS_PLEDGE ? PLEDGE_PAGE : PERMISSIONS_PAGE)}>
           {t('onboarding.skip')}
         </button>
       )}
@@ -129,6 +136,12 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
           <p className="footnote secondary center" style={{ marginTop: 14 }}>🏅 {t('onboarding.p3Short')}</p>
         </section>
 
+        {HAS_PLEDGE && (
+          <section className="onboarding-page">
+            <CampaignContent first />
+          </section>
+        )}
+
         <section className="onboarding-page">
           <h1 className="title1 center" style={{ marginTop: 24 }}>{t('onboarding.p4Title')}</h1>
           <p className="subhead secondary center">{t('onboarding.p4Text')}</p>
@@ -171,7 +184,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
             else finish();
           }}
         >
-          {page < PERMISSIONS_PAGE ? t('common.continue') : t('onboarding.start')}
+          {page === PLEDGE_PAGE && !myStreets.length ? t('campaign.later') : page < PERMISSIONS_PAGE ? t('common.continue') : t('onboarding.start')}
         </button>
       </div>
     </div>

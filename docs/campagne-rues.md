@@ -12,9 +12,12 @@ Objectif : inciter les habitants à relever les avaloirs d'une ou plusieurs rues
 
 ## Dans le tunnel du premier lancement
 
-- Après l'accueil (4 pages), un écran **« Quelle est votre rue ? »** propose de choisir sa rue (recherche par nom) : **+5 points par rue** (jusqu'à 3 rues) et le badge **« Voisin engagé »**. Il est facultatif (« Plus tard »).
-- Si la personne l'a ignoré, une carte « Et si vous releviez toute votre rue ? » revient sur l'écran de félicitations après le **1er et le 3e avaloir**.
-- L'étape n'apparaît qu'à la fin de l'accueil (donc après les explications sur les objectifs), une seule fois, et jamais seule au lancement d'une appli déjà utilisée (ces personnes reçoivent les cartes de rappel après leurs avaloirs).
+Accueil en 5 pages : 1) le moustique tigre, 2) « Un avaloir, c'est quoi ? » avec **LA MISSION** en évidence (« Votre mission : photographier les avaloirs de votre rue, un par un. »), 3) les étapes d'un relevé, 4) **« Quelle est votre rue ? »** (engagement), 5) les autorisations (localisation, appareil photo).
+
+- L'engagement arrive donc après les explications sur les objectifs et **avant** les autorisations. On cherche sa rue par son nom ; **+5 points par rue** (jusqu'à 3 rues) et le badge **« Voisin engagé »**. Facultatif : tant qu'aucune rue n'est choisie, le bouton de la page indique « Plus tard ».
+- « Passer » dans l'accueil mène directement à cette page d'engagement (puis aux autorisations).
+- Si la personne n'a pas choisi de rue, une carte « Et si vous releviez toute votre rue ? » revient sur l'écran de félicitations après le **1er et le 3e avaloir**.
+- Cette page n'existe que si la commune est configurée (`commune.insee` dans `public/config.js`) ; sinon l'accueil compte 4 pages.
 
 ## Communication sur les réseaux
 

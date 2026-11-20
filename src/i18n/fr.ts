@@ -59,7 +59,7 @@ const fr: Dict = {
     drainText: 'C’est la grille, ou l’ouverture dans la bordure, qui avale l’eau de pluie de la rue pour l’envoyer dans les canalisations. Il y en a des centaines dans une commune, et vous passez devant sans les voir.',
     waterTitle: 'Quand l’eau stagne, les larves prospèrent',
     waterText: 'Sous la grille, le fond d’un avaloir garde souvent de l’eau pendant des semaines : c’est une pouponnière idéale pour le moustique tigre. La mairie peut traiter chaque avaloir avec un larvicide, mais elle doit d’abord savoir où ils sont tous.',
-    mission: 'Votre mission : les repérer, un par un.',
+    mission: 'Votre mission : photographier les avaloirs de votre rue, un par un.',
     cutawayAlt: 'Coupe d’un avaloir : la pluie descend par la grille, le fond du regard reste en eau et abrite des larves de moustique.',
     grate: 'Grille',
     water: 'Eau stagnante',
@@ -535,7 +535,7 @@ const fr: Dict = {
 
   campaign: {
     firstTitle: 'Quelle est votre rue ?',
-    firstIntro: 'Pour freiner le moustique tigre, il faut recenser tous les avaloirs de la commune. Votre première mission : choisissez votre rue, ou une rue que vous connaissez, et engagez-vous à relever ses avaloirs.',
+    firstIntro: 'Votre mission : photographier tous les avaloirs de votre rue. Choisissez-la, ou plusieurs rues, pour vous engager.',
     reward: 'Gagnez +{points} pts par rue choisie (jusqu’à {max} rues) et le badge « Voisin engagé ».',
     earned: 'Engagement pris : +{points} pts',
     typeHint: 'Tapez le nom de votre rue pour la trouver.',

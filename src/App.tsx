@@ -14,7 +14,6 @@ import { Onboarding } from './screens/Onboarding';
 import { InstallGuide } from './screens/InstallGuide';
 import { AccountWizard, markWizardResume, shouldResumeWizard } from './screens/AccountWizard';
 import { LockedNudge } from './components/LockedReminder';
-import { getConfig } from './lib/config';
 import { InviteScreen } from './screens/InviteScreen';
 import { CampaignScreen } from './screens/CampaignScreen';
 import { consumeCampaignLink } from './lib/invite';
@@ -30,7 +29,6 @@ const TABS: { id: Tab; icon: IconName; label: string }[] = [
 ];
 
 const ONBOARDED_KEY = 'avaloirs.onboarded';
-const PLEDGE_KEY = 'avaloirs.pledgeSeen';
 const INSTALL_SNOOZE_KEY = 'avaloirs.installSnoozeUntil';
 const INSTALL_REFUSALS_KEY = 'avaloirs.installRefusals';
 const DAY = 24 * 3600 * 1000;
@@ -50,17 +48,6 @@ export function App() {
   const [tab, setTab] = useState<Tab>('map');
   const [capturing, setCapturing] = useState(false);
   const [onboarded, setOnboarded] = useState(() => readFlag(ONBOARDED_KEY));
-  // Tunnel du premier lancement : accueil (objectifs), PUIS « Quelle est votre rue ? » (engagement, ignorable).
-  // L'étape n'apparaît qu'à la fin de l'accueil, jamais seule au lancement d'une appli déjà utilisée.
-  const [pledgePending, setPledgePending] = useState(false);
-  const finishPledge = () => {
-    try {
-      localStorage.setItem(PLEDGE_KEY, '1');
-    } catch {
-      /* ignore */
-    }
-    setPledgePending(false);
-  };
   const [install, setInstall] = useState(false);
   const [orphanCode, setOrphanCode] = useState<string | null>(null);
   // Assistant de compte, rouvert automatiquement au retour d'openstreetmap.org.
@@ -85,7 +72,6 @@ export function App() {
       /* ignore */
     }
     setOnboarded(true);
-    if (getConfig().commune.insee && !readFlag(PLEDGE_KEY)) setPledgePending(true);
   };
 
   /**
@@ -129,7 +115,6 @@ export function App() {
   // Lien de campagne (?rues) : ouvre « Mes rues à relever » une fois l'accueil passé.
   useEffect(() => {
     if (onboarded && !capturing && consumeCampaignLink()) {
-      finishPledge();
       setSocial('campaign');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -176,15 +161,13 @@ export function App() {
   const closeCapture = useCallback(() => setCapturing(false), []);
 
   if (orphanCode) return <OrphanCode code={orphanCode} onClose={() => setOrphanCode(null)} />;
-  if (!onboarded) return <Onboarding onDone={finishOnboarding} />;
-  if (pledgePending)
+  if (!onboarded)
     return (
       <>
-        <CampaignScreen first onClose={finishPledge} />
+        <Onboarding onDone={finishOnboarding} />
         <ToastHost />
       </>
     );
-
   return (
     <>
       <main className="app">

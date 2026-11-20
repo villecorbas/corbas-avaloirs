@@ -17,7 +17,19 @@ type Filter = 'all' | 'todo' | 'mine';
  * « Mes rues à relever » : choisir une ou plusieurs rues de la commune, suivre leur avancement (engagement local).
  * `first` : étape du tout premier lancement (tunnel de gamification) : on cherche sa rue, +points à la clé.
  */
-export function CampaignScreen({ onClose, first = false }: { onClose: () => void; first?: boolean }) {
+export function CampaignScreen({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="wizard-modal" role="dialog" aria-modal="true" aria-label={t('campaign.title')}>
+      <button className="icon-btn wizard-close" onClick={onClose} aria-label={t('common.close')}>
+        <Icon name="close" stroke={2.4} />
+      </button>
+      <CampaignContent />
+    </div>
+  );
+}
+
+/** Contenu de l'écran ; `first` = version du tunnel d'accueil (intégrée à une page, sans fenêtre ni bouton de fermeture). */
+export function CampaignContent({ first = false }: { first?: boolean }) {
   const commune = useCommune();
   const online = useOnline();
   const { osm } = useAuth();
@@ -65,12 +77,7 @@ export function CampaignScreen({ onClose, first = false }: { onClose: () => void
   };
 
   return (
-    <div className="wizard-modal" role="dialog" aria-modal="true" aria-label={t('campaign.title')}>
-      {!first && (
-        <button className="icon-btn wizard-close" onClick={onClose} aria-label={t('common.close')}>
-          <Icon name="close" stroke={2.4} />
-        </button>
-      )}
+    <>
       <div className="wizard">
         <div className="wizard-art" aria-hidden="true" style={{ fontSize: 40 }}>
           🏘️
@@ -190,14 +197,7 @@ export function CampaignScreen({ onClose, first = false }: { onClose: () => void
           </button>
         )}
         <p className="section-footer center">{t('campaign.local')}</p>
-        {first && (
-          <div className="sticky-cta">
-            <button className={`btn ${mine.length ? '' : 'plain'}`} onClick={onClose}>
-              {mine.length ? t('campaign.next') : t('campaign.later')}
-            </button>
-          </div>
-        )}
       </div>
-    </div>
+    </>
   );
 }

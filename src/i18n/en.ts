@@ -59,7 +59,7 @@ const en: Dict = {
     drainText: 'It is the grate, or the opening in the kerb, that swallows rainwater from the street and sends it into the pipes. A town has hundreds of them, and you walk past without noticing.',
     waterTitle: 'When water stagnates, larvae thrive',
     waterText: 'Under the grate, the bottom of a drain often keeps water for weeks: an ideal nursery for tiger mosquitoes. The town hall can treat each drain with a larvicide, but first it has to know where they all are.',
-    mission: 'Your mission: spot them, one by one.',
+    mission: 'Your mission: photograph the storm drains on your street, one by one.',
     cutawayAlt: 'Cross-section of a drain: rain flows down through the grate, the bottom stays full of water and shelters mosquito larvae.',
     grate: 'Grate',
     water: 'Standing water',
@@ -535,7 +535,7 @@ const en: Dict = {
 
   campaign: {
     firstTitle: 'What’s your street?',
-    firstIntro: 'To curb the tiger mosquito, every storm drain in town has to be mapped. Your first mission: pick your street, or one you know, and commit to mapping its storm drains.',
+    firstIntro: 'Your mission: photograph every storm drain on your street. Pick it, or several streets, to commit.',
     reward: 'Earn +{points} pts per street (up to {max} streets) and the “Committed neighbour” badge.',
     earned: 'Commitment made: +{points} pts',
     typeHint: 'Type your street name to find it.',
