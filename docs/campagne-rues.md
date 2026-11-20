@@ -10,6 +10,12 @@ Objectif : inciter les habitants à relever les avaloirs d'une ou plusieurs rues
 - **Je m'engage** : on choisit une ou plusieurs rues (30 au maximum). Le choix est mémorisé sur le téléphone et résumé sur l'onglet Défis (« 2 rues choisies · 35 % relevé »).
 - **Inviter mes voisins à m'aider** : partage natif (ou WhatsApp) d'un message « Je m'engage à relever les avaloirs de … » avec un lien qui ouvre directement l'écran ; compte comme une invitation (+5 points, plafonnés comme les autres invitations).
 
+## Dans le tunnel du premier lancement
+
+- Après l'accueil (4 pages), un écran **« Quelle est votre rue ? »** propose de choisir sa rue (recherche par nom) : **+5 points par rue** (jusqu'à 3 rues) et le badge **« Voisin engagé »**. Il est facultatif (« Plus tard »).
+- Si la personne l'a ignoré, une carte « Et si vous releviez toute votre rue ? » revient sur l'écran de félicitations après le **1er et le 3e avaloir**.
+- Seuls les nouveaux utilisateurs et ceux qui n'ont pas encore vu l'étape la rencontrent ; elle n'apparaît qu'une fois.
+
 ## Communication sur les réseaux
 
 - Lien à diffuser : `https://villecorbas.github.io/corbas-avaloirs/?rues` (après l'accueil, l'écran « Mes rues à relever » s'ouvre).

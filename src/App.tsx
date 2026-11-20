@@ -14,6 +14,7 @@ import { Onboarding } from './screens/Onboarding';
 import { InstallGuide } from './screens/InstallGuide';
 import { AccountWizard, markWizardResume, shouldResumeWizard } from './screens/AccountWizard';
 import { LockedNudge } from './components/LockedReminder';
+import { getConfig } from './lib/config';
 import { InviteScreen } from './screens/InviteScreen';
 import { CampaignScreen } from './screens/CampaignScreen';
 import { consumeCampaignLink } from './lib/invite';
@@ -29,6 +30,7 @@ const TABS: { id: Tab; icon: IconName; label: string }[] = [
 ];
 
 const ONBOARDED_KEY = 'avaloirs.onboarded';
+const PLEDGE_KEY = 'avaloirs.pledgeSeen';
 const INSTALL_SNOOZE_KEY = 'avaloirs.installSnoozeUntil';
 const INSTALL_REFUSALS_KEY = 'avaloirs.installRefusals';
 const DAY = 24 * 3600 * 1000;
@@ -48,6 +50,16 @@ export function App() {
   const [tab, setTab] = useState<Tab>('map');
   const [capturing, setCapturing] = useState(false);
   const [onboarded, setOnboarded] = useState(() => readFlag(ONBOARDED_KEY));
+  // Tunnel du premier lancement : accueil, puis « Quelle est votre rue ? » (engagement, ignorable).
+  const [pledgeSeen, setPledgeSeen] = useState(() => readFlag(PLEDGE_KEY));
+  const finishPledge = () => {
+    try {
+      localStorage.setItem(PLEDGE_KEY, '1');
+    } catch {
+      /* ignore */
+    }
+    setPledgeSeen(true);
+  };
   const [install, setInstall] = useState(false);
   const [orphanCode, setOrphanCode] = useState<string | null>(null);
   // Assistant de compte, rouvert automatiquement au retour d'openstreetmap.org.
@@ -114,7 +126,11 @@ export function App() {
   const [social, setSocial] = useState<'invite' | 'share' | 'campaign' | null>(null);
   // Lien de campagne (?rues) : ouvre « Mes rues à relever » une fois l'accueil passé.
   useEffect(() => {
-    if (onboarded && !capturing && consumeCampaignLink()) setSocial('campaign');
+    if (onboarded && !capturing && consumeCampaignLink()) {
+      finishPledge();
+      setSocial('campaign');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onboarded, capturing]);
   useEffect(() => {
     const check = () => {
@@ -159,6 +175,13 @@ export function App() {
 
   if (orphanCode) return <OrphanCode code={orphanCode} onClose={() => setOrphanCode(null)} />;
   if (!onboarded) return <Onboarding onDone={finishOnboarding} />;
+  if (!pledgeSeen && getConfig().commune.insee)
+    return (
+      <>
+        <CampaignScreen first onClose={finishPledge} />
+        <ToastHost />
+      </>
+    );
 
   return (
     <>
@@ -179,7 +202,7 @@ export function App() {
         ))}
       </nav>
 
-      {capturing && <CaptureFlow onClose={closeCapture} onOpenAccounts={openAccounts} onOpenInvite={() => setSocial('invite')} />}
+      {capturing && <CaptureFlow onClose={closeCapture} onOpenAccounts={openAccounts} onOpenInvite={() => setSocial('invite')} onOpenCampaign={() => setSocial('campaign')} />}
 
       {wizard && (
         <div className="wizard-modal" role="dialog" aria-modal="true" aria-label={t('wizard.title')}>

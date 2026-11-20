@@ -8,25 +8,46 @@ const KEY = 'avaloirs.myStreets';
 const EVENT = 'avaloirs:streets';
 export const MAX_STREETS = 30;
 
-export function readStreets(): string[] {
+export interface Commitment {
+  name: string;
+  /** Date de l'engagement (0 si inconnue). */
+  ts: number;
+}
+
+/** Points d'engagement : par rue choisie, pour les {MAX_POINT_STREETS} premières rues (évite d'en cocher cent pour gagner des points). */
+export const COMMIT_POINTS = 5;
+export const MAX_POINT_STREETS = 3;
+
+export function readCommitments(): Commitment[] {
   try {
     const raw = JSON.parse(localStorage.getItem(KEY) || '[]');
-    return Array.isArray(raw) ? raw.filter((s): s is string => typeof s === 'string' && s.length > 0 && s.length <= 120).slice(0, MAX_STREETS) : [];
+    if (!Array.isArray(raw)) return [];
+    const out: Commitment[] = [];
+    for (const x of raw) {
+      const name = typeof x === 'string' ? x : x && typeof x.n === 'string' ? x.n : '';
+      if (!name || name.length > 120) continue;
+      out.push({ name, ts: typeof x === 'object' && Number.isFinite(x.t) ? x.t : 0 });
+    }
+    return out.slice(0, MAX_STREETS);
   } catch {
     return [];
   }
 }
 
-export function setStreetChosen(name: string, chosen: boolean): string[] {
-  const cur = readStreets().filter((s) => s !== name);
-  const next = chosen ? [...cur, name].slice(-MAX_STREETS) : cur;
+export function readStreets(): string[] {
+  return readCommitments().map((c) => c.name);
+}
+
+export function setStreetChosen(name: string, chosen: boolean, now = Date.now()): string[] {
+  const cur = readCommitments().filter((c) => c.name !== name);
+  const next = (chosen ? [...cur, { name, ts: now }] : cur).slice(-MAX_STREETS);
   try {
-    localStorage.setItem(KEY, JSON.stringify(next));
+    localStorage.setItem(KEY, JSON.stringify(next.map((c) => ({ n: c.name, t: c.ts }))));
   } catch {
     /* stockage indisponible : le choix vaut pour la session seulement */
   }
   if (typeof window !== 'undefined') window.dispatchEvent(new Event(EVENT));
-  return next;
+  return next.map((c) => c.name);
 }
 
 export function useMyStreets(): string[] {

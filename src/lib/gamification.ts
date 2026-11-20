@@ -1,5 +1,6 @@
 import type { DrainRecord } from './db';
 import { INVITE_POINTS, readInvites, wasInvited, WELCOME_POINTS, type InviteEntry } from './inviteLog';
+import { COMMIT_POINTS, MAX_POINT_STREETS, readCommitments, type Commitment } from './commitments';
 import type { DrainDetails, Observations } from './taxonomy';
 
 /* ------------------------------------------------------------------------ */
@@ -123,6 +124,7 @@ interface Stats {
   water: number;
   published: number;
   invites: number;
+  commitments: number;
   maxPerDay: number;
   perDay: Map<string, number>;
   days: Set<string>;
@@ -152,6 +154,7 @@ export const BADGES: BadgeDef[] = [
   { id: 'whistleblower', icon: '💧', colors: ['#64d2ff', '#30b0c7'], target: 1, value: (s) => s.water },
   { id: 'enricher', icon: '✨', colors: ['#bf5af2', '#ff375f'], target: 5, value: (s) => s.enrich },
   { id: 'published', icon: '🌍', colors: ['#32d74b', '#007aff'], target: 1, value: (s) => s.published },
+  { id: 'neighbor', icon: '🏘️', colors: ['#30d158', '#0a9d58'], target: 1, value: (s) => s.commitments },
   { id: 'recruiter', icon: '🤝', colors: ['#5ac8fa', '#34c759'], target: 3, value: (s) => s.invites },
   { id: 'ambassador', icon: '📣', colors: ['#ff9f0a', '#ff2d55'], target: 10, value: (s) => s.invites },
   { id: 'marathon', icon: '🏃', colors: ['#ff453a', '#ff9f0a'], target: 20, value: (s) => s.maxPerDay },
@@ -170,6 +173,7 @@ function emptyStats(): Stats {
     water: 0,
     published: 0,
     invites: 0,
+    commitments: 0,
     maxPerDay: 0,
     perDay: new Map(),
     days: new Set(),
@@ -218,12 +222,15 @@ export interface Progress {
   /** Invitations récompensées et points associés. */
   invites: number;
   invitePoints: number;
+  /** Rues choisies (engagement) et points associés. */
+  commitments: number;
+  commitPoints: number;
   /** Relevés pas encore publiés sur OSM, et points de publication correspondants « verrouillés ». */
   unsent: number;
   lockedPoints: number;
 }
 
-export function computeProgress(records: DrainRecord[], now = Date.now(), invites: InviteEntry[] = readInvites()): Progress {
+export function computeProgress(records: DrainRecord[], now = Date.now(), invites: InviteEntry[] = readInvites(), commitments: Commitment[] = readCommitments()): Progress {
   const sorted = [...records].sort((a, b) => a.createdAt - b.createdAt);
   const stats = emptyStats();
   const unlocked = new Map<string, number>();
@@ -244,6 +251,13 @@ export function computeProgress(records: DrainRecord[], now = Date.now(), invite
       unlocked.set(b.id, [...invites].sort((x, y) => x.ts - y.ts)[b.target - 1]?.ts ?? now);
     }
   }
+  // Engagement sur des rues : points (plafonnés) et badge « Voisin engagé ».
+  stats.commitments = commitments.length;
+  const commitPoints = Math.min(commitments.length, MAX_POINT_STREETS) * COMMIT_POINTS;
+  points += commitPoints;
+  if (commitments.length && !unlocked.has('neighbor')) {
+    unlocked.set('neighbor', Math.min(...commitments.map((c) => c.ts || now)));
+  }
   const today = dayKey(now);
   return {
     points,
@@ -256,6 +270,8 @@ export function computeProgress(records: DrainRecord[], now = Date.now(), invite
     pending: sorted.filter((r) => needsSync(r)).length,
     invites: invites.length,
     invitePoints,
+    commitments: commitments.length,
+    commitPoints,
     unsent: sorted.filter((r) => r.sync.osm.status !== 'done' && r.sync.osm.status !== 'skipped').length,
     lockedPoints: sorted.filter((r) => r.sync.osm.status !== 'done' && r.sync.osm.status !== 'skipped').length * PUBLISH_BONUS,
   };

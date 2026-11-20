@@ -44,7 +44,11 @@ export function useProgress() {
   useEffect(() => {
     const bump = () => setInviteVersion((v) => v + 1);
     window.addEventListener('avaloirs:invites', bump);
-    return () => window.removeEventListener('avaloirs:invites', bump);
+    window.addEventListener('avaloirs:streets', bump);
+    return () => {
+      window.removeEventListener('avaloirs:invites', bump);
+      window.removeEventListener('avaloirs:streets', bump);
+    };
   }, []);
   return useMemo(() => computeProgress(records || []), [records, day, inviteVersion]);
 }

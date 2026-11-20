@@ -39,7 +39,7 @@ async function installMocks(context) {
   await context.route('**/config.js', (route) =>
     route.fulfill({
       contentType: 'application/javascript',
-      body: `window.AVALOIRS_CONFIG = { campaignName: 'Chasse aux avaloirs', commune: { estimatedDrains: 400 }, dailyGoal: 5,
+      body: `window.AVALOIRS_CONFIG = { campaignName: 'Chasse aux avaloirs', commune: { insee: '69273', name: 'Corbas', estimatedDrains: 400 }, dailyGoal: 5,
         openstreetmap: { environment: 'production', clientId: 'e2e-client', hashtags: ['#avaloirs', '#moustiquetigre'] },
         panoramax: { instance: 'https://panoramax.openstreetmap.fr' }, overpass: ['https://overpass-api.de/api/interpreter'] };`,
     }),
@@ -292,6 +292,16 @@ async function main() {
     await shot('04-accueil-autorisations');
     check(!(await page.getByText('Votre compte de contributeur').isVisible().catch(() => false)), 'Accueil : aucune demande de compte avant le premier avaloir');
     await page.getByRole('button', { name: 'C’est parti !' }).click();
+    // Tunnel du premier lancement : « Quelle est votre rue ? » (engagement avec points)
+    await page.getByText('Quelle est votre rue ?').waitFor();
+    check(await page.getByText(/Gagnez \+5\spts par rue choisie/).isVisible(), 'Première utilisation : l’engagement sur une rue rapporte des points');
+    check(await page.getByRole('button', { name: 'Plus tard' }).isVisible(), 'Première utilisation : l’engagement reste facultatif (« Plus tard »)');
+    await page.getByRole('searchbox', { name: 'Chercher ma rue' }).fill('vigne');
+    await page.getByRole('button', { name: 'Je m’engage' }).first().click();
+    await page.getByText(/Engagement pris\s:\s\+5\spts/).waitFor({ timeout: 5000 });
+    check(true, 'Première utilisation : choix d’une rue, +5 pts annoncés');
+    await shot('00-premiere-rue');
+    await page.getByRole('button', { name: 'Continuer' }).click();
     await page.getByText('Installer l’application').waitFor();
     await wait(600);
     await shot('05-installation');
@@ -635,11 +645,11 @@ async function main() {
     await page.getByRole('button', { name: /Mes rues à relever/ }).click();
     await page.getByText('Rue du Père Chevrier').waitFor({ timeout: 10000 });
     await wait(500);
-    check(await page.getByText('Chemin des Vignes').isVisible(), 'Campagne : toutes les rues de la liste officielle (BAN) sont affichées');
+    check(await page.getByRole('list').getByText('Chemin des Vignes').isVisible(), 'Campagne : toutes les rues de la liste officielle (BAN) sont affichées');
     check(!(await page.getByText('Lieudit Montmartin').isVisible().catch(() => false)), 'Campagne : les lieux-dits sont écartés');
     check(await page.getByText('Avancement inconnu').isVisible(), 'Campagne : une rue sans tracé OSM reste listée, avancement inconnu');
     // Plusieurs rues : engagement local, sans inscription ni envoi de données
-    await page.getByRole('button', { name: 'Je m’engage' }).nth(0).click();
+    check(await page.getByText('Ma rue à relever').isVisible(), 'Campagne : la rue choisie au premier lancement est conservée');
     await page.getByRole('button', { name: 'Je m’engage' }).nth(0).click();
     await page.getByText('Mes 2 rues à relever').waitFor();
     check(await page.getByText('Inviter mes voisins à m’aider').isVisible(), 'Campagne : plusieurs rues choisies, partage de l’engagement proposé');

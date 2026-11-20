@@ -3,7 +3,7 @@ import { getConfig } from '../../lib/config';
 import { t } from '../../i18n';
 import { Icon } from '../../components/Icon';
 import { Bar, Confetti, CountUp, Ring } from '../../components/ui';
-import { InviteCard, LockedCard } from '../../components/LockedReminder';
+import { InviteCard, LockedCard, PledgeCard } from '../../components/LockedReminder';
 import { invitePromptDue, lastInvitePrompt, markInvitePrompt } from '../../lib/inviteLog';
 import type { BadgeState, PointLine, Progress } from '../../lib/gamification';
 import { panoramaxReady } from '../../lib/panoramax';
@@ -18,6 +18,7 @@ export function SuccessStep({
   onFinish,
   onConnect,
   onInvite,
+  onCampaign,
 }: {
   points: { total: number; lines: PointLine[] };
   before: Progress;
@@ -27,6 +28,7 @@ export function SuccessStep({
   onFinish: () => void;
   onConnect: () => void;
   onInvite: () => void;
+  onCampaign: () => void;
 }) {
   const goal = getConfig().dailyGoal;
   const levelUp = after.level.level > before.level.level;
@@ -133,6 +135,8 @@ export function SuccessStep({
           <Icon name="chevron" size={16} className="chev" />
         </button>
       ) : null}
+
+      {(after.count === 1 || after.count === 3) && after.commitments === 0 && <PledgeCard onPledge={onCampaign} />}
 
       {showInvite && <InviteCard onInvite={onInvite} count={after.count} />}
 

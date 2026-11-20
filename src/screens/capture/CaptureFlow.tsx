@@ -26,7 +26,7 @@ type Step = 'photo' | 'locate' | 'type' | 'trace' | 'review' | 'success';
 const SHAPES: DrainShape[] = ['rectangular', 'square', 'circular'];
 const MATERIALS: DrainMaterial[] = ['metal', 'concrete'];
 
-export function CaptureFlow({ onClose, onOpenAccounts, onOpenInvite }: { onClose: () => void; onOpenAccounts: () => void; onOpenInvite: () => void }) {
+export function CaptureFlow({ onClose, onOpenAccounts, onOpenInvite, onOpenCampaign }: { onClose: () => void; onOpenAccounts: () => void; onOpenInvite: () => void; onOpenCampaign: () => void }) {
   const records = useRecords() || [];
   const [step, setStep] = useState<Step>('photo');
   // Deux demandes d'autorisation simultanées (caméra + position) s'annulent parfois sur iPhone :
@@ -302,6 +302,10 @@ export function CaptureFlow({ onClose, onOpenAccounts, onOpenInvite }: { onClose
             onInvite={() => {
               close();
               onOpenInvite();
+            }}
+            onCampaign={() => {
+              close();
+              onOpenCampaign();
             }}
           />
         )}

@@ -1,4 +1,5 @@
 import { t } from '../i18n';
+import { COMMIT_POINTS } from '../lib/commitments';
 import { Icon } from './Icon';
 
 /**
@@ -100,6 +101,24 @@ export function InviteCard({ onInvite, count = 2 }: { onInvite: () => void; coun
       </div>
       <button className="btn" onClick={onInvite}>
         {t('inviteCard.button')}
+      </button>
+    </div>
+  );
+}
+
+/** Rappel après le 1er (et le 3e) avaloir : s'engager sur des rues, avec points et badge à la clé. */
+export function PledgeCard({ onPledge }: { onPledge: () => void }) {
+  return (
+    <div className="card invite-card pop" style={{ marginTop: 16, animationDelay: '.5s' }}>
+      <div className="row" style={{ alignItems: 'flex-start' }}>
+        <span className="reward-star big" aria-hidden="true">🏘️</span>
+        <div style={{ flex: 1 }}>
+          <div className="headline">{t('campaign.nudgeTitle')}</div>
+          <div className="footnote secondary">{t('campaign.nudgeText', { points: COMMIT_POINTS })}</div>
+        </div>
+      </div>
+      <button className="btn" onClick={onPledge}>
+        {t('campaign.nudgeButton')}
       </button>
     </div>
   );

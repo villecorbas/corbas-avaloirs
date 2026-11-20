@@ -2,9 +2,9 @@ import { useMemo, useState } from 'react';
 import { getConfig } from '../lib/config';
 import { t } from '../i18n';
 import { Icon } from '../components/Icon';
-import { Bar, Segmented, Spinner } from '../components/ui';
+import { Bar, haptic, Segmented, Spinner, toast } from '../components/ui';
 import { registerInvite } from '../components/inviteReward';
-import { MAX_STREETS, setStreetChosen, useMyStreets } from '../lib/commitments';
+import { COMMIT_POINTS, MAX_POINT_STREETS, MAX_STREETS, setStreetChosen, useMyStreets } from '../lib/commitments';
 import { channelLink, inviteUrl } from '../lib/invite';
 import { streetKey, streetState } from '../lib/streets';
 import { useOnline, useAuth } from '../lib/store';
@@ -13,8 +13,11 @@ import { useCommune } from './ProfileScreen';
 
 type Filter = 'all' | 'todo' | 'mine';
 
-/** « Mes rues à relever » : choisir une ou plusieurs rues de la commune, suivre leur avancement (engagement local). */
-export function CampaignScreen({ onClose }: { onClose: () => void }) {
+/**
+ * « Mes rues à relever » : choisir une ou plusieurs rues de la commune, suivre leur avancement (engagement local).
+ * `first` : étape du tout premier lancement (tunnel de gamification) : on cherche sa rue, +points à la clé.
+ */
+export function CampaignScreen({ onClose, first = false }: { onClose: () => void; first?: boolean }) {
   const commune = useCommune();
   const online = useOnline();
   const { osm } = useAuth();
@@ -30,11 +33,20 @@ export function CampaignScreen({ onClose }: { onClose: () => void }) {
   const needle = streetKey(query);
   const shown = useMemo(
     () =>
-      list
+      (first && !needle ? [] : list)
         .filter((p) => (needle ? p.key.includes(needle) : true))
         .filter((p) => (filter === 'todo' ? streetState(p) !== 'done' : filter === 'mine' ? mine.includes(p.name) : true)),
-    [list, needle, filter, mine],
+    [list, needle, filter, mine, first],
   );
+
+  const toggle = (name: string, on: boolean) => {
+    const before = mine.length;
+    setStreetChosen(name, on);
+    if (on) {
+      haptic('success');
+      if (before < MAX_POINT_STREETS) toast(t('campaign.earned', { points: COMMIT_POINTS }), 'star', 'var(--orange)');
+    }
+  };
 
   const place = commune?.name || getConfig().commune.name;
   const shareUrl = (() => {
@@ -54,19 +66,25 @@ export function CampaignScreen({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="wizard-modal" role="dialog" aria-modal="true" aria-label={t('campaign.title')}>
-      <button className="icon-btn wizard-close" onClick={onClose} aria-label={t('common.close')}>
-        <Icon name="close" stroke={2.4} />
-      </button>
+      {!first && (
+        <button className="icon-btn wizard-close" onClick={onClose} aria-label={t('common.close')}>
+          <Icon name="close" stroke={2.4} />
+        </button>
+      )}
       <div className="wizard">
         <div className="wizard-art" aria-hidden="true" style={{ fontSize: 40 }}>
           🏘️
         </div>
-        <h1 className="title1 center">{t('campaign.title')}</h1>
+        <h1 className="title1 center">{first ? t('campaign.firstTitle') : t('campaign.title')}</h1>
         <p className="subhead secondary center" style={{ margin: 0 }}>
-          {t('campaign.intro')}
+          {first ? t('campaign.firstIntro') : t('campaign.intro')}
         </p>
+        <div className="card row reward-banner">
+          <span className="reward-star" aria-hidden="true">⭐</span>
+          <span className="footnote" style={{ flex: 1 }}>{t('campaign.reward', { points: COMMIT_POINTS, max: MAX_POINT_STREETS })}</span>
+        </div>
 
-        {mine.length > 0 && (
+        {mine.length > 0 && !first && (
           <div className="card stack">
             <div className="headline">{t('campaign.mineTitle', { count: mine.length })}</div>
             {myRows.map((p) => (
@@ -90,7 +108,7 @@ export function CampaignScreen({ onClose }: { onClose: () => void }) {
           </div>
         )}
 
-        {progress && (
+        {progress && !first && (
           <div className="card stack">
             <div className="row footnote">
               <span style={{ fontWeight: 600 }}>{t('campaign.summary', { done, total: list.length })}</span>
@@ -111,12 +129,14 @@ export function CampaignScreen({ onClose }: { onClose: () => void }) {
             setLimit(40);
           }}
         />
+        {!first && (
         <Segmented<Filter>
           label={t('campaign.filter')}
           value={filter}
           onChange={setFilter}
           options={(['all', 'todo', 'mine'] as Filter[]).map((f) => ({ value: f, label: t(`campaign.filter_${f}`) }))}
         />
+        )}
 
         {!progress && !failed && (
           <div className="center" style={{ padding: 24 }}>
@@ -130,7 +150,8 @@ export function CampaignScreen({ onClose }: { onClose: () => void }) {
             <span className="footnote">{online ? t('campaign.failed') : t('campaign.offline')}</span>
           </div>
         )}
-        {progress && !shown.length && <p className="subhead secondary center">{t('campaign.none')}</p>}
+        {progress && first && !needle && <p className="footnote secondary center">{t('campaign.typeHint')}</p>}
+        {progress && !shown.length && (!first || needle) && <p className="subhead secondary center">{t('campaign.none')}</p>}
 
         <ul className="street-list">
           {shown.slice(0, limit).map((p) => {
@@ -153,7 +174,7 @@ export function CampaignScreen({ onClose }: { onClose: () => void }) {
                       className={`btn small ${chosen ? '' : 'tinted'}`}
                       aria-pressed={chosen}
                       disabled={!chosen && mine.length >= MAX_STREETS}
-                      onClick={() => setStreetChosen(p.name, !chosen)}
+                      onClick={() => toggle(p.name, !chosen)}
                     >
                       {chosen ? `✓ ${t('campaign.chosen')}` : t('campaign.choose')}
                     </button>
@@ -169,6 +190,13 @@ export function CampaignScreen({ onClose }: { onClose: () => void }) {
           </button>
         )}
         <p className="section-footer center">{t('campaign.local')}</p>
+        {first && (
+          <div className="sticky-cta">
+            <button className={`btn ${mine.length ? '' : 'plain'}`} onClick={onClose}>
+              {mine.length ? t('campaign.next') : t('campaign.later')}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
