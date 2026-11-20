@@ -8,6 +8,8 @@ import { Bar, Ring, Sheet, Spinner } from '../components/ui';
 import { kvGet } from '../lib/db';
 import { cachedCommuneStats, fetchCommuneStats, type CommuneStats } from '../lib/overpass';
 import { useAuth, useOnline, useProgress } from '../lib/store';
+import { useMyStreets } from '../lib/commitments';
+import { useStreetProgress } from '../lib/useStreetProgress';
 import type { BadgeState } from '../lib/gamification';
 
 export function useCommune() {
@@ -58,6 +60,13 @@ export function ProfileScreen({ onConnect, onInvite, onShare, onCampaign }: { on
   const monthBoard = useMemo(() => (stats ? buildLeaderboard(stats.drains, { since: Date.now() - 30 * 86_400_000 }) : []), [stats]);
   const myEntry = myName ? monthBoard.find((e) => e.user === myName) : undefined;
   const [showBoard, setShowBoard] = useState(false);
+  // « Mes rues » : avancement affiché sur la carte (ne charge les rues que si des rues sont choisies).
+  const myStreets = useMyStreets();
+  const { progress: streetProgress } = useStreetProgress(commune?.insee, myStreets.length > 0);
+  const myProgress = useMemo(() => {
+    const known = (streetProgress ?? []).filter((p) => myStreets.includes(p.name) && p.ratio !== null);
+    return known.length ? { pct: Math.round((known.reduce((a, p) => a + (p.ratio ?? 0), 0) / known.length) * 100) } : null;
+  }, [streetProgress, myStreets]);
   const communeName = commune?.name || cfg.commune.name;
   const target = cfg.commune.estimatedDrains;
 
@@ -96,7 +105,7 @@ export function ProfileScreen({ onConnect, onInvite, onShare, onCampaign }: { on
         <span className="lb-entry-icon" aria-hidden="true">🏘️</span>
         <span style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
           <span className="headline" style={{ display: 'block' }}>{t('campaign.card')}</span>
-          <span className="footnote secondary">{t('campaign.cardText')}</span>
+          <span className="footnote secondary">{myProgress ? t('campaign.cardMine', { count: myStreets.length, pct: myProgress.pct }) : t('campaign.cardText')}</span>
         </span>
         <Icon name="chevron" size={16} className="chev" />
       </button>

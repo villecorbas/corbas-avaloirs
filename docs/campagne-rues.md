@@ -1,56 +1,21 @@
-# Campagne « Mes rues à relever » — mise en place
+# Campagne « Mes rues à relever »
 
-Objectif : des habitants s'inscrivent pour cartographier les avaloirs d'une rue de Corbas (plusieurs personnes par rue possibles), et la mairie peut les relancer par e-mail si la rue n'avance pas. Une centaine d'inscrits : un **Google Form + Google Sheets** suffit, sans serveur à part.
+Objectif : inciter les habitants à relever les avaloirs d'une ou plusieurs rues de Corbas. C'est un **engagement personnel**, volontairement léger : **aucune inscription, aucun compte, aucun serveur, aucune donnée personnelle collectée**. Tout reste sur le téléphone (donc pas de formalités RGPD propres à cette fonction).
 
 ## Ce que fait l'application
 
-- Écran **Mes rues à relever** (onglet Défis, ou Réglages) : toutes les voies de Corbas d'après la **Base Adresse Nationale** (BAN, référentiel de l'État en open data sur adresse.data.gouv.fr, Licence Ouverte), avec l'avancement de chacune, une recherche et les filtres « À faire » et « Sans inscrit ».
-- **Avancement** : part de la longueur de la rue à moins de 35 m d'un avaloir connu. La géométrie vient d'OpenStreetMap, rapprochée de la BAN par le nom de la rue ; une voie de la BAN sans tracé correspondant dans OpenStreetMap reste dans la liste, avec « Avancement inconnu » (elle n'est alors pas relancée).
-- **Plusieurs rues** : chaque rue a un bouton « Je la prends » ; un seul bouton « Je m'engage pour N rues » ouvre le formulaire avec toutes les rues cochées. Plusieurs personnes peuvent choisir la même rue.
-- Compteur d'inscrits par rue (public, sans aucune donnée personnelle) si `statsUrl` est renseigné.
-- Notice « Protection de vos données » intégrée.
-- Lien de campagne à diffuser sur les réseaux : `https://villecorbas.github.io/corbas-avaloirs/?rues` (ouvre directement l'écran après l'accueil).
-- Bouton « Exporter l'avancement (CSV) » : sert aux relances (voir plus bas).
+- Écran **Mes rues à relever** (carte dans l'onglet Défis, ou ligne dans Réglages).
+- Liste de toutes les voies de Corbas d'après la **Base Adresse Nationale** (BAN, référentiel de l'État en open data sur adresse.data.gouv.fr, Licence Ouverte), sans les lieux-dits ; recherche et filtres « À faire » / « Mes rues ».
+- **Avancement de chaque rue** : part de sa longueur à moins de 35 m d'un avaloir connu (OpenStreetMap + relevés du téléphone). La géométrie vient d'OpenStreetMap, rapprochée de la BAN par le nom ; une voie sans tracé correspondant reste listée avec « Avancement inconnu ». Une rue couverte à 90 % ou plus passe en vert « Terminée ».
+- **Je m'engage** : on choisit une ou plusieurs rues (30 au maximum). Le choix est mémorisé sur le téléphone et résumé sur l'onglet Défis (« 2 rues choisies · 35 % relevé »).
+- **Inviter mes voisins à m'aider** : partage natif (ou WhatsApp) d'un message « Je m'engage à relever les avaloirs de … » avec un lien qui ouvre directement l'écran ; compte comme une invitation (+5 points, plafonnés comme les autres invitations).
 
-## Mise en place (environ 30 minutes)
+## Communication sur les réseaux
 
-Pour la conformité, utilisez **le compte Google de la mairie** (idéalement Google Workspace, dont les conditions incluent un accord de traitement des données), pas un compte personnel.
+- Lien à diffuser : `https://villecorbas.github.io/corbas-avaloirs/?rues` (après l'accueil, l'écran « Mes rues à relever » s'ouvre).
+- Pour savoir où en est la campagne : les chiffres sont publics (OpenStreetMap). L'onglet Défis et le classement de la commune montrent l'avancement global ; l'écran des rues, rue par rue.
 
-1. Allez sur script.google.com (compte de la mairie) > **Nouveau projet**, collez le contenu de `docs/campagne/apps-script.gs`, adaptez le bloc `CONFIG` (adresse e-mail de contact notamment) et enregistrez.
-2. Exécutez `creerFormulaire` (autorisez le script). Dans **Affichage > Journaux**, notez l'adresse publiée du formulaire et celle du classeur des réponses. Si la Base Adresse Nationale est indisponible, réessayez plus tard. Cette étape ne se fait qu'une fois.
-3. Ouvrez le **classeur des réponses** : renommez l'onglet de réponses en **Réponses**, ajoutez les titres `Statut`, `Relances`, `Dernière relance` en colonnes F, G, H, et créez un onglet **Avancement** (titres : `rue`, `couverture_pct`, `longueur_m`). Puis **Extensions > Apps Script** *de ce classeur* et collez **de nouveau le même script** (sans relancer `creerFormulaire`) : c'est ce projet-là qui gère le menu « Campagne », les relances, la purge et les compteurs.
-4. **Pré-remplissage de la rue** : dans le formulaire, menu ⋮ > *Obtenir un lien pré-rempli*, cochez une ou deux rues de la question « Rues », cliquez « Obtenir le lien » : l'adresse contient `entry.123456789=…` (répété pour chaque rue cochée). Notez ce `entry.…`.
-5. **Compteurs publics** : dans l'Apps Script du classeur de réponses, *Déployer > Nouveau déploiement > Application Web*, exécuter en tant que **moi**, accès **tout le monde**. Notez l'adresse `https://script.google.com/macros/s/…/exec` : elle ne renvoie que `{ "counts": { "nom de rue": nombre } }`.
-6. Renseignez `public/config.js` (bloc `campaign`) : `formUrl`, `streetEntry`, `statsUrl`, `contactEmail` (et `privacyUrl` si la commune a une page dédiée), puis publiez (commit sur `main`).
-7. Partagez le classeur des réponses **uniquement** avec les 1 ou 2 personnes habilitées (ne jamais « toute personne disposant du lien »).
+## Limites assumées
 
-## Relancer les inscrits dont la rue n'avance pas
-
-1. Dans l'application : écran *Mes rues à relever* > **Exporter l'avancement (CSV)**.
-2. Collez le contenu (sans l'en-tête) dans l'onglet **Avancement** du classeur de réponses.
-3. Menu **Campagne > Relances : voir qui serait relancé (essai)** : rien n'est envoyé, on voit le nombre de messages.
-4. Menu **Campagne > Relances : envoyer maintenant**.
-
-Règles appliquées : seuls les inscrits **ayant consenti** et non désinscrits sont relancés ; pour chacune de leurs rues dont l'avancement est connu et inférieur à 90 % (l'e-mail ne cite que ces rues) ; première relance 14 jours après l'inscription, puis tous les 14 jours, **3 relances au maximum**. Chaque e-mail indique d'où vient le message et comment s'opposer (répondre « STOP » ou écrire à la mairie). Gmail limite l'envoi à ~100 e-mails par jour avec un compte gratuit (1 500 avec Workspace) : largement suffisant ici.
-
-## RGPD : check-list
-
-| Point | Dans cette solution |
-|---|---|
-| Responsable du traitement | La commune de Corbas (à indiquer dans le registre des traitements ; informer le DPO s'il existe). |
-| Données collectées (minimisation) | Prénom/pseudo, e-mail, rue(s) choisie(s), horodatage. Pas de téléphone, pas d'adresse postale. |
-| Base légale | **Consentement** (case à cocher obligatoire, non pré-cochée) pour l'inscription et les rappels. |
-| Information | Texte de protection des données en tête du formulaire et dans l'application (Écran > Protection de vos données). |
-| Conservation | Effacement automatique après 6 mois (`purger`, à programmer : Apps Script > Déclencheurs > mensuel). |
-| Droits (accès, rectification, effacement, opposition) | Réponse à l'adresse de contact ; menu *Campagne > EFFACER la ligne sélectionnée* ; *Désinscrit* stoppe les relances. |
-| Sécurité | Classeur privé, 1-2 personnes habilitées, compte mairie avec validation en deux étapes. |
-| Sous-traitant | Google (hébergement du formulaire et du classeur) : vérifier l'accord de traitement et les clauses sur les transferts hors UE dans la console d'administration Workspace. |
-| Données publiques | Les relevés (position, photo) sont publiés sur OpenStreetMap/Panoramax : c'est indépendant de cette inscription et indiqué dans la notice. |
-
-⚠️ Ce document est une aide technique, pas un avis juridique : faites valider la notice et le registre des traitements par le DPO ou le délégué de la commune.
-
-## Idées de communication
-
-- Lien unique par réseau (WhatsApp, Facebook) : `…/?rues`.
-- « Sans inscrit » : le filtre de l'application permet de repérer les rues à promouvoir en priorité (ex. publication « Cette semaine, on cherche des volontaires pour… »).
-- Une rue terminée passe en vert « Terminée » : à relayer comme un résultat de la campagne.
+- La mairie ne voit pas qui s'est engagé sur quelle rue (pas de base centralisée) et ne peut donc pas relancer les personnes par e-mail. Les rappels se font via les réseaux sociaux et le lien ci-dessus.
+- Si une relance individuelle devenait utile, il faudrait un formulaire de consentement (avec notice RGPD, durée de conservation et droits) : cette étape a été écartée volontairement.

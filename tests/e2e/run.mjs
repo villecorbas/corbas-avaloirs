@@ -41,8 +41,7 @@ async function installMocks(context) {
       contentType: 'application/javascript',
       body: `window.AVALOIRS_CONFIG = { campaignName: 'Chasse aux avaloirs', commune: { estimatedDrains: 400 }, dailyGoal: 5,
         openstreetmap: { environment: 'production', clientId: 'e2e-client', hashtags: ['#avaloirs', '#moustiquetigre'] },
-        panoramax: { instance: 'https://panoramax.openstreetmap.fr' }, overpass: ['https://overpass-api.de/api/interpreter'],
-        campaign: { formUrl: 'https://docs.google.com/forms/d/e/TEST/viewform', streetEntry: 'entry.123456', contactEmail: 'mairie@example.org' } };`,
+        panoramax: { instance: 'https://panoramax.openstreetmap.fr' }, overpass: ['https://overpass-api.de/api/interpreter'] };`,
     }),
   );
   // Base Adresse Nationale : liste officielle des voies de la commune.
@@ -639,22 +638,22 @@ async function main() {
     check(await page.getByText('Chemin des Vignes').isVisible(), 'Campagne : toutes les rues de la liste officielle (BAN) sont affichées');
     check(!(await page.getByText('Lieudit Montmartin').isVisible().catch(() => false)), 'Campagne : les lieux-dits sont écartés');
     check(await page.getByText('Avancement inconnu').isVisible(), 'Campagne : une rue sans tracé OSM reste listée, avancement inconnu');
-    // Plusieurs rues : sélection, puis un seul bouton d’inscription avec les rues pré-remplies
-    await page.getByRole('button', { name: 'Je la prends' }).nth(0).click();
-    await page.getByRole('button', { name: 'Je la prends' }).nth(0).click();
-    const join = page.getByRole('link', { name: /Je m’engage pour 2 rues/ });
-    await join.waitFor();
-    const href = new URL(await join.getAttribute('href'));
-    check(href.searchParams.getAll('entry.123456').length === 2 && href.searchParams.get('usp') === 'pp_url', 'Campagne : plusieurs rues choisies, formulaire pré-rempli avec chacune');
+    // Plusieurs rues : engagement local, sans inscription ni envoi de données
+    await page.getByRole('button', { name: 'Je m’engage' }).nth(0).click();
+    await page.getByRole('button', { name: 'Je m’engage' }).nth(0).click();
+    await page.getByText('Mes 2 rues à relever').waitFor();
+    check(await page.getByText('Inviter mes voisins à m’aider').isVisible(), 'Campagne : plusieurs rues choisies, partage de l’engagement proposé');
+    check(await page.getByText(/aucune inscription, aucune donnée envoyée/).isVisible(), 'Campagne : l’engagement reste sur le téléphone');
     await shot('40-campagne-rues');
     await page.getByRole('searchbox', { name: 'Chercher ma rue' }).fill('vignes');
     check(!(await page.getByText('Rue du Père Chevrier').isVisible().catch(() => false)), 'Campagne : la recherche filtre sans tenir compte des accents ni de la casse');
-    await page.getByRole('button', { name: /Protection de vos données/ }).click();
-    check(await page.getByText(/responsable du traitement/).isVisible(), 'Campagne : notice RGPD affichée');
-    await page.getByRole('dialog').last().getByRole('button', { name: 'Fermer' }).click();
-    await wait(400);
+    await page.getByRole('searchbox', { name: 'Chercher ma rue' }).fill('');
+    await page.getByRole('button', { name: 'Mes rues', exact: true }).click();
+    check(!(await page.getByText('Rue du Père Chevrier').isVisible().catch(() => false)), 'Campagne : le filtre « Mes rues » ne garde que les rues choisies');
     await page.getByRole('dialog').getByRole('button', { name: 'Fermer' }).click();
     await wait(400);
+    // L’engagement est conservé et résumé sur la carte de l’onglet Défis
+    check(await page.getByText(/2 rues choisies/).isVisible(), 'Campagne : « Mes rues » résumées sur l’onglet Défis');
 
     // 13 bis. Couche SIG de la commune : fichier GeoJSON téléchargé et contenu vérifié
     await page.getByRole('button', { name: 'Réglages' }).click();

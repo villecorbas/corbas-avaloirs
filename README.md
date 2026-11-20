@@ -278,4 +278,4 @@ Structure : `src/lib/` (métier : `taxonomy.ts`, `osm.ts`, `panoramax.ts`, `sync
 
 ## Campagne « Mes rues à relever »
 
-Écran d'inscription par rue (avancement, formulaire Google pré-rempli, relances par e-mail, notice RGPD) : voir [docs/campagne-rues.md](docs/campagne-rues.md). Le lien `…/?rues` ouvre directement l'écran.
+Choix local d'une ou plusieurs rues de la commune (liste officielle BAN), avancement rue par rue, partage de son engagement : voir [docs/campagne-rues.md](docs/campagne-rues.md). Aucune donnée personnelle collectée. Le lien `…/?rues` ouvre directement l'écran.

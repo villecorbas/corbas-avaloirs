@@ -1,94 +1,56 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { getConfig } from '../lib/config';
 import { t } from '../i18n';
 import { Icon } from '../components/Icon';
-import { Bar, Segmented, Sheet, Spinner } from '../components/ui';
-import { useCommuneDrains } from '../lib/communeDrains';
-import { download, recordCenter } from '../lib/export';
-import { cachedBanStreets, fetchBanStreets, type BanStreet } from '../lib/ban';
-import { cachedCommuneStreets, fetchCommuneStreets, type NamedStreet } from '../lib/overpass';
-import { formLink, parseCounts, progressCSV, streetsProgress, streetState } from '../lib/streets';
-import { useOnline, useRecords } from '../lib/store';
+import { Bar, Segmented, Spinner } from '../components/ui';
+import { registerInvite } from '../components/inviteReward';
+import { MAX_STREETS, setStreetChosen, useMyStreets } from '../lib/commitments';
+import { channelLink, inviteUrl } from '../lib/invite';
+import { streetKey, streetState } from '../lib/streets';
+import { useOnline, useAuth } from '../lib/store';
+import { useStreetProgress } from '../lib/useStreetProgress';
 import { useCommune } from './ProfileScreen';
 
-const STALE_MS = 7 * 86_400_000;
-type Filter = 'all' | 'todo' | 'nobody';
+type Filter = 'all' | 'todo' | 'mine';
 
-/** « Mes rues à relever » : toutes les rues de la commune, leur avancement, et l'inscription pour en cartographier une. */
+/** « Mes rues à relever » : choisir une ou plusieurs rues de la commune, suivre leur avancement (engagement local). */
 export function CampaignScreen({ onClose }: { onClose: () => void }) {
-  const cfg = getConfig();
   const commune = useCommune();
-  const insee = commune?.insee;
   const online = useOnline();
-  const records = useRecords();
-  const communeDrains = useCommuneDrains(insee);
-  const [official, setOfficial] = useState<BanStreet[] | null>(null);
-  const [osmStreets, setOsmStreets] = useState<NamedStreet[]>([]);
-  const [picked, setPicked] = useState<string[]>([]);
-  const [failed, setFailed] = useState(false);
-  const [counts, setCounts] = useState<Record<string, number>>({});
+  const { osm } = useAuth();
+  const mine = useMyStreets();
+  const { progress, failed } = useStreetProgress(commune?.insee);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
-  const [notice, setNotice] = useState(false);
   const [limit, setLimit] = useState(40);
 
-  // Liste officielle des voies (Base Adresse Nationale) + tracés OpenStreetMap pour mesurer l'avancement.
-  useEffect(() => {
-    if (!insee) return;
-    let alive = true;
-    const load = async <T extends { at: number }, R>(cached: () => Promise<T | undefined>, fetchFresh: () => Promise<R>, apply: (c: T) => void, applyFresh: (r: R) => void, required: boolean) => {
-      const c = await cached();
-      if (!alive) return;
-      if (c) apply(c);
-      if ((!c || Date.now() - c.at > STALE_MS) && navigator.onLine !== false) {
-        try {
-          const r = await fetchFresh();
-          if (alive) applyFresh(r);
-        } catch {
-          if (alive && !c && required) setFailed(true);
-        }
-      }
-    };
-    void load(() => cachedBanStreets(insee), () => fetchBanStreets(insee), (c) => setOfficial(c.streets), (r) => { setOfficial(r); setFailed(false); }, true);
-    void load(() => cachedCommuneStreets(insee), () => fetchCommuneStreets(insee), (c) => setOsmStreets(c.streets), (r) => setOsmStreets(r), false);
-    return () => {
-      alive = false;
-    };
-  }, [insee]);
-
-  // Compteurs publics d'inscrits par rue (aucune donnée personnelle).
-  useEffect(() => {
-    if (!cfg.campaign.statsUrl) return;
-    const ctl = new AbortController();
-    const timer = setTimeout(() => ctl.abort(), 8000);
-    fetch(cfg.campaign.statsUrl, { signal: ctl.signal, credentials: 'omit', referrerPolicy: 'no-referrer' })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j) => setCounts(parseCounts(j)))
-      .catch(() => undefined)
-      .finally(() => clearTimeout(timer));
-    return () => {
-      clearTimeout(timer);
-      ctl.abort();
-    };
-  }, [cfg.campaign.statsUrl]);
-
-  const progress = useMemo(
-    () => (official ? streetsProgress(official, osmStreets, [...communeDrains, ...(records || []).map(recordCenter)], counts) : []),
-    [official, osmStreets, communeDrains, records, counts],
-  );
-  const done = progress.filter((p) => streetState(p) === 'done').length;
-  const needle = query
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .trim();
+  const list = progress ?? [];
+  const done = list.filter((p) => streetState(p) === 'done').length;
+  const myRows = list.filter((p) => mine.includes(p.name));
+  const needle = streetKey(query);
   const shown = useMemo(
     () =>
-      progress
+      list
         .filter((p) => (needle ? p.key.includes(needle) : true))
-        .filter((p) => (filter === 'todo' ? streetState(p) !== 'done' : filter === 'nobody' ? streetState(p) !== 'done' && !p.volunteers : true)),
-    [progress, needle, filter],
+        .filter((p) => (filter === 'todo' ? streetState(p) !== 'done' : filter === 'mine' ? mine.includes(p.name) : true)),
+    [list, needle, filter, mine],
   );
+
+  const place = commune?.name || getConfig().commune.name;
+  const shareUrl = (() => {
+    const u = new URL(inviteUrl(osm?.user?.name));
+    u.searchParams.set('rues', '1');
+    return u.toString();
+  })();
+  const shareText = t('campaign.shareText', { streets: mine.join(', '), place: place ? t('invite.inPlace', { name: place }) : '' });
+  const share = () => {
+    if (typeof navigator.share === 'function') {
+      void navigator
+        .share({ title: getConfig().campaignName, text: shareText, url: shareUrl })
+        .then(() => registerInvite('commitment'))
+        .catch(() => undefined);
+    }
+  };
 
   return (
     <div className="wizard-modal" role="dialog" aria-modal="true" aria-label={t('campaign.title')}>
@@ -104,12 +66,36 @@ export function CampaignScreen({ onClose }: { onClose: () => void }) {
           {t('campaign.intro')}
         </p>
 
-        {official && (
+        {mine.length > 0 && (
+          <div className="card stack">
+            <div className="headline">{t('campaign.mineTitle', { count: mine.length })}</div>
+            {myRows.map((p) => (
+              <div key={p.key} className="stack" style={{ gap: 4 }}>
+                <div className="row footnote">
+                  <span style={{ flex: 1, minWidth: 0 }}>{p.name}</span>
+                  <span className="secondary">{streetState(p) === 'done' ? `✓ ${t('campaign.done')}` : p.ratio === null ? t('campaign.unknown') : `${Math.round(p.ratio * 100)} %`}</span>
+                </div>
+                {p.ratio !== null && <Bar progress={p.ratio} height={5} color={streetState(p) === 'done' ? 'var(--green)' : 'var(--accent)'} />}
+              </div>
+            ))}
+            {typeof navigator.share === 'function' ? (
+              <button className="btn" onClick={share}>
+                <Icon name="share" /> {t('campaign.share')}
+              </button>
+            ) : (
+              <a className="btn" href={channelLink('whatsapp', `${shareText} ${shareUrl}`, '')} target="_blank" rel="noopener noreferrer" onClick={() => registerInvite('commitment')}>
+                <Icon name="share" /> {t('campaign.share')}
+              </a>
+            )}
+          </div>
+        )}
+
+        {progress && (
           <div className="card stack">
             <div className="row footnote">
-              <span style={{ fontWeight: 600 }}>{t('campaign.summary', { done, total: progress.length })}</span>
+              <span style={{ fontWeight: 600 }}>{t('campaign.summary', { done, total: list.length })}</span>
             </div>
-            <Bar progress={progress.length ? done / progress.length : 0} color="linear-gradient(90deg, var(--accent), var(--teal))" />
+            <Bar progress={list.length ? done / list.length : 0} color="linear-gradient(90deg, var(--accent), var(--teal))" />
           </div>
         )}
 
@@ -129,10 +115,10 @@ export function CampaignScreen({ onClose }: { onClose: () => void }) {
           label={t('campaign.filter')}
           value={filter}
           onChange={setFilter}
-          options={(['all', 'todo', 'nobody'] as Filter[]).map((f) => ({ value: f, label: t(`campaign.filter_${f}`) }))}
+          options={(['all', 'todo', 'mine'] as Filter[]).map((f) => ({ value: f, label: t(`campaign.filter_${f}`) }))}
         />
 
-        {!official && !failed && (
+        {!progress && !failed && (
           <div className="center" style={{ padding: 24 }}>
             <Spinner size={28} />
             <p className="footnote secondary">{t('campaign.loading')}</p>
@@ -144,12 +130,12 @@ export function CampaignScreen({ onClose }: { onClose: () => void }) {
             <span className="footnote">{online ? t('campaign.failed') : t('campaign.offline')}</span>
           </div>
         )}
-        {official && !shown.length && <p className="subhead secondary center">{t('campaign.none')}</p>}
+        {progress && !shown.length && <p className="subhead secondary center">{t('campaign.none')}</p>}
 
         <ul className="street-list">
           {shown.slice(0, limit).map((p) => {
             const state = streetState(p);
-            const chosen = picked.includes(p.name);
+            const chosen = mine.includes(p.name);
             return (
               <li key={p.key} className={`card street-row ${chosen ? 'chosen' : ''}`}>
                 <div className="row" style={{ alignItems: 'baseline' }}>
@@ -161,20 +147,18 @@ export function CampaignScreen({ onClose }: { onClose: () => void }) {
                   )}
                 </div>
                 {p.ratio !== null && <Bar progress={p.ratio} height={6} color={state === 'done' ? 'var(--green)' : 'var(--accent)'} />}
-                <div className="row footnote secondary">
-                  <span style={{ flex: 1 }}>
-                    {p.volunteers ? t('campaign.volunteers', { count: p.volunteers }) : cfg.campaign.statsUrl ? t('campaign.nobody') : ''}
-                  </span>
-                  {cfg.campaign.formUrl && state !== 'done' && (
+                {(state !== 'done' || chosen) && (
+                  <div className="row footnote secondary" style={{ justifyContent: 'flex-end' }}>
                     <button
                       className={`btn small ${chosen ? '' : 'tinted'}`}
                       aria-pressed={chosen}
-                      onClick={() => setPicked(chosen ? picked.filter((n) => n !== p.name) : [...picked, p.name])}
+                      disabled={!chosen && mine.length >= MAX_STREETS}
+                      onClick={() => setStreetChosen(p.name, !chosen)}
                     >
                       {chosen ? `✓ ${t('campaign.chosen')}` : t('campaign.choose')}
                     </button>
-                  )}
-                </div>
+                  </div>
+                )}
               </li>
             );
           })}
@@ -184,42 +168,8 @@ export function CampaignScreen({ onClose }: { onClose: () => void }) {
             {t('campaign.more', { count: shown.length - limit })}
           </button>
         )}
-
-        {picked.length > 0 && (
-          <div className="sticky-cta">
-            <a className="btn" href={formLink(cfg.campaign.formUrl, cfg.campaign.streetEntry, picked)} target="_blank" rel="noopener noreferrer">
-              {t('campaign.join', { count: picked.length })}
-            </a>
-          </div>
-        )}
-
-        {!cfg.campaign.formUrl && <p className="section-footer center">{t('campaign.soon')}</p>}
-        <button className="btn plain" onClick={() => setNotice(true)}>
-          <Icon name="lock" size={16} /> {t('campaign.privacyLink')}
-        </button>
-        {official && (
-          <button className="btn plain" onClick={() => download('avancement_rues.csv', progressCSV(progress), 'text/csv;charset=utf-8')}>
-            <Icon name="download" size={16} /> {t('campaign.exportCsv')}
-          </button>
-        )}
+        <p className="section-footer center">{t('campaign.local')}</p>
       </div>
-
-      <Sheet open={notice} onClose={() => setNotice(false)} title={t('campaign.privacyTitle')} elevated>
-        <div className="stack" style={{ gap: 10 }}>
-          <p className="subhead" style={{ margin: 0 }}>{t('campaign.privacyWho', { commune: commune?.name || cfg.commune.name || '' })}</p>
-          <p className="subhead" style={{ margin: 0 }}>{t('campaign.privacyWhat')}</p>
-          <p className="subhead" style={{ margin: 0 }}>{t('campaign.privacyWhy')}</p>
-          <p className="subhead" style={{ margin: 0 }}>{t('campaign.privacyKeep')}</p>
-          <p className="subhead" style={{ margin: 0 }}>{t('campaign.privacyRights')}</p>
-          <p className="footnote secondary" style={{ margin: 0 }}>{t('campaign.privacyPublic')}</p>
-          {cfg.campaign.contactEmail && (
-            <a className="btn gray" href={`mailto:${cfg.campaign.contactEmail}`}>{cfg.campaign.contactEmail}</a>
-          )}
-          {cfg.campaign.privacyUrl && (
-            <a className="btn plain" href={cfg.campaign.privacyUrl} target="_blank" rel="noopener noreferrer">{t('campaign.privacyFull')}</a>
-          )}
-        </div>
-      </Sheet>
     </div>
   );
 }

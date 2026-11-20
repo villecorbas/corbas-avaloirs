@@ -50,13 +50,4 @@ window.AVALOIRS_CONFIG = {
     'https://overpass.private.coffee/api/interpreter',
     'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
   ],
-
-  // Campagne « Mes rues à relever » (voir docs/campagne-rues.md). Laisser vide tant que le formulaire n'est pas créé.
-  campaign: {
-    formUrl: '',      // adresse publiée du formulaire Google : https://docs.google.com/forms/d/e/…/viewform
-    streetEntry: '',  // identifiant du champ « Rue » pour la pré-remplir : entry.123456789
-    statsUrl: '',     // adresse de l'application web Apps Script (nombre d'inscrits par rue, sans donnée personnelle)
-    privacyUrl: '',   // page « protection des données » de la commune (facultatif)
-    contactEmail: ''  // contact RGPD affiché dans la notice
-  },
 };
