@@ -67,7 +67,10 @@ async function installMocks(context) {
       street(9003, [45.7517501, 4.8454389], [45.7513506, 4.8449091]), // rue d'Anvers
     ];
     const recent = (e, days) => ({ ...e, timestamp: new Date(Date.now() - days * 86_400_000).toISOString() });
-    const elements = body.includes('area')
+    const named = (id, name, a, b) => ({ ...street(id, a, b), tags: { highway: 'residential', name } });
+    const elements = body.includes('["name"](area')
+      ? [named(9001, 'Rue du Père Chevrier', [45.7502401, 4.8417403], [45.7498931, 4.8423235]), named(9004, 'Chemin des Vignes', [45.7600, 4.8500], [45.7610, 4.8510])]
+      : body.includes('area')
       ? [recent(existing[0], 3), existing[1], recent(existing[2], 5), recent(existing[3], 9), ...extra.map((e, i) => recent(e, 1 + i)), recent(gutter, 2)]
       : body.includes('highway')
         ? [...existing, gutter, ...streets]
@@ -613,6 +616,23 @@ async function main() {
     for (let i = 0; i < 30 && (state.pnxDeleted?.length || 0) < 2; i++) await wait(300);
     check(state.osmChanges.filter((x) => x.includes('<delete')).length === 1, 'Suppression : l’avaloir existant d’un autre contributeur n’est jamais supprimé');
     check(state.pnxDeleted?.length === 2, 'Suppression : sa photo est retirée de Panoramax');
+
+    // 13 ter. Campagne « Adoptez une rue » : liste des rues, recherche, inscription pré-remplie
+    await page.getByRole('button', { name: 'Défis' }).click();
+    await page.getByRole('button', { name: /Adoptez une rue/ }).click();
+    await page.getByText('Rue du Père Chevrier').waitFor({ timeout: 10000 });
+    await wait(500);
+    await shot('40-campagne-rues');
+    check(await page.getByText('Chemin des Vignes').isVisible(), 'Campagne : toutes les rues de la commune sont listées');
+    await page.getByRole('searchbox', { name: 'Chercher ma rue' }).fill('vignes');
+    check(!(await page.getByText('Rue du Père Chevrier').isVisible().catch(() => false)), 'Campagne : la recherche filtre sans tenir compte des accents ni de la casse');
+    check(await page.getByText(/Les inscriptions ouvriront très bientôt/).isVisible(), 'Campagne : sans formulaire configuré, message d’attente (pas de bouton d’inscription)');
+    await page.getByRole('button', { name: /Protection de vos données/ }).click();
+    check(await page.getByText(/responsable du traitement/).isVisible(), 'Campagne : notice RGPD affichée');
+    await page.getByRole('dialog').last().getByRole('button', { name: 'Fermer' }).click();
+    await wait(400);
+    await page.getByRole('dialog').getByRole('button', { name: 'Fermer' }).click();
+    await wait(400);
 
     // 13 bis. Couche SIG de la commune : fichier GeoJSON téléchargé et contenu vérifié
     await page.getByRole('button', { name: 'Réglages' }).click();

@@ -3,13 +3,14 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { getLang } from './i18n';
 import { captureInstallPrompt } from './screens/InstallGuide';
-import { captureReferral } from './lib/invite';
+import { captureCampaignLink, captureReferral } from './lib/invite';
 import './styles/global.css';
 import './styles/app.css';
 
 document.documentElement.lang = getLang();
 captureInstallPrompt();
 captureReferral();
+captureCampaignLink();
 
 // Service worker : fonctionnement hors-ligne et installation (production uniquement).
 if ('serviceWorker' in navigator && import.meta.env.PROD) {

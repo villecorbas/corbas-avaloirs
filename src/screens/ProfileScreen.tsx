@@ -20,7 +20,7 @@ export function useCommune() {
   return commune;
 }
 
-export function ProfileScreen({ onConnect, onInvite, onShare }: { onConnect: () => void; onInvite: () => void; onShare: () => void }) {
+export function ProfileScreen({ onConnect, onInvite, onShare, onCampaign }: { onConnect: () => void; onInvite: () => void; onShare: () => void; onCampaign: () => void }) {
   const progress = useProgress();
   const auth = useAuth();
   const online = useOnline();
@@ -91,6 +91,15 @@ export function ProfileScreen({ onConnect, onInvite, onShare }: { onConnect: () 
         <MiniStat icon="flame" color="var(--orange)" value={progress.streak} label={t('profile.streakDays', { count: progress.streak })} />
         <MiniStat icon="star" color="var(--yellow)" value={unlockedCount} label={t('profile.badges', { total: progress.badges.length })} />
       </div>
+
+      <button className="card lb-entry" onClick={onCampaign}>
+        <span className="lb-entry-icon" aria-hidden="true">🏘️</span>
+        <span style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+          <span className="headline" style={{ display: 'block' }}>{t('campaign.card')}</span>
+          <span className="footnote secondary">{t('campaign.cardText')}</span>
+        </span>
+        <Icon name="chevron" size={16} className="chev" />
+      </button>
 
       <button className="card lb-entry" onClick={() => stats && setShowBoard(true)} disabled={!stats}>
         <span className="lb-entry-icon" aria-hidden="true">🏆</span>

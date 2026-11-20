@@ -15,6 +15,8 @@ import { InstallGuide } from './screens/InstallGuide';
 import { AccountWizard, markWizardResume, shouldResumeWizard } from './screens/AccountWizard';
 import { LockedNudge } from './components/LockedReminder';
 import { InviteScreen } from './screens/InviteScreen';
+import { CampaignScreen } from './screens/CampaignScreen';
+import { consumeCampaignLink } from './lib/invite';
 import { ShareScoreScreen } from './screens/ShareScoreScreen';
 import { getOsmAuth, osmConfigured } from './lib/osm';
 
@@ -109,7 +111,11 @@ export function App() {
 
   // Rappel « travail non envoyé » (au plus toutes les 12 h) pour les contributeurs sans compte.
   const [nudge, setNudge] = useState(false);
-  const [social, setSocial] = useState<'invite' | 'share' | null>(null);
+  const [social, setSocial] = useState<'invite' | 'share' | 'campaign' | null>(null);
+  // Lien de campagne (?rues) : ouvre « Adoptez une rue » une fois l'accueil passé.
+  useEffect(() => {
+    if (onboarded && !capturing && consumeCampaignLink()) setSocial('campaign');
+  }, [onboarded, capturing]);
   useEffect(() => {
     const check = () => {
       if (!onboarded || install || capturing || wizard || !osmConfigured() || getOsmAuth() || progress.unsent === 0) return;
@@ -159,8 +165,8 @@ export function App() {
       <main className="app">
         {tab === 'map' && <MapScreen onAdd={() => setCapturing(true)} onOpenProfile={() => setTab('profile')} onOpenAccounts={openAccounts} />}
         {tab === 'records' && <RecordsScreen onOpenAccounts={openAccounts} onAdd={() => setCapturing(true)} />}
-        {tab === 'profile' && <ProfileScreen onConnect={openAccounts} onInvite={() => setSocial('invite')} onShare={() => setSocial('share')} />}
-        {tab === 'settings' && <SettingsScreen onInvite={() => setSocial('invite')} />}
+        {tab === 'profile' && <ProfileScreen onConnect={openAccounts} onInvite={() => setSocial('invite')} onShare={() => setSocial('share')} onCampaign={() => setSocial('campaign')} />}
+        {tab === 'settings' && <SettingsScreen onInvite={() => setSocial('invite')} onCampaign={() => setSocial('campaign')} />}
       </main>
 
       <nav className="tabbar" aria-label={t('tabs.label')}>
@@ -186,6 +192,7 @@ export function App() {
 
       {social === 'invite' && <InviteScreen onClose={() => setSocial(null)} />}
       {social === 'share' && <ShareScoreScreen onClose={() => setSocial(null)} />}
+      {social === 'campaign' && <CampaignScreen onClose={() => setSocial(null)} />}
 
       <Sheet open={nudge} onClose={() => setNudge(false)} elevated>
         <LockedNudge

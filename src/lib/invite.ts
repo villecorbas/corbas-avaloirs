@@ -38,6 +38,32 @@ export function captureReferral() {
   }
 }
 
+const CAMPAIGN_KEY = 'avaloirs.openCampaign';
+
+/** Lien de campagne « …/?rues » : mémorise l'intention (l'accueil peut venir d'abord) et nettoie l'URL. */
+export function captureCampaignLink() {
+  try {
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has('rues')) return;
+    localStorage.setItem(CAMPAIGN_KEY, '1');
+    url.searchParams.delete('rues');
+    window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Vrai une seule fois après un lien de campagne. */
+export function consumeCampaignLink(): boolean {
+  try {
+    if (localStorage.getItem(CAMPAIGN_KEY) !== '1') return false;
+    localStorage.removeItem(CAMPAIGN_KEY);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function invitedBy(): string | null {
   try {
     return cleanPseudo(localStorage.getItem(REF_KEY)) || null;

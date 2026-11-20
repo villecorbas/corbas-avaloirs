@@ -1881,3 +1881,8 @@
   body { background: #1c1c1e; }
 }
 .mapped-warning { background: color-mix(in srgb, var(--orange) 14%, var(--bg-elevated)); }
+
+/* --- Campagne « Adoptez une rue » ------------------------------------------ */
+.street-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.street-row { display: flex; flex-direction: column; gap: 8px; }
+.wizard .text-input { flex: none; width: 100%; height: 44px; font-size: 1rem; padding: 0 14px; }

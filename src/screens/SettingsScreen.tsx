@@ -33,7 +33,7 @@ function Row({ icon, color, label, value, onClick, href }: { icon: IconName; col
   );
 }
 
-export function SettingsScreen({ onInvite }: { onInvite: () => void }) {
+export function SettingsScreen({ onInvite, onCampaign }: { onInvite: () => void; onCampaign: () => void }) {
   const lang = useLang();
   const records = useRecords() || [];
   const commune = useCommune();
@@ -87,6 +87,7 @@ export function SettingsScreen({ onInvite }: { onInvite: () => void }) {
       <div className="list">
         {!isStandalone() && <Row icon="download" color="var(--blue)" label={t('settings.install')} onClick={() => setSheet('install')} />}
         <Row icon="qr" color="var(--indigo)" label={t('settings.share')} onClick={onInvite} />
+        <Row icon="home" color="var(--teal)" label={t('campaign.card')} onClick={onCampaign} />
       </div>
 
       <button className="btn plain more-toggle" aria-expanded={showAdv} onClick={() => setShowAdv(!showAdv)}>

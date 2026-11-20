@@ -174,3 +174,35 @@ out geom;`;
 export async function cachedArea(): Promise<AreaData | undefined> {
   return kvGet('areaData');
 }
+
+
+/* --------------------------- Rues nommées de la commune --------------------------- */
+
+export interface NamedStreet {
+  name: string;
+  /** Tronçons OSM de la rue (une rue peut en compter plusieurs). */
+  ways: LatLon[][];
+}
+
+/** Toutes les rues nommées de la commune (pour la campagne « Adoptez une rue »). */
+export async function fetchCommuneStreets(insee: string): Promise<NamedStreet[]> {
+  const q = `[out:json][timeout:60];
+area["ref:INSEE"="${insee.replace(/[^0-9AB]/gi, '')}"]["boundary"="administrative"]->.a;
+way["highway"~"^(${STREET_TYPES})$"]["name"](area.a);
+out tags geom;`;
+  const json = await runOverpass(q, 40000);
+  const byName = new Map<string, LatLon[][]>();
+  for (const e of json.elements as (RawElement & { tags?: Tags })[]) {
+    const name = e.tags?.name?.trim();
+    if (e.type !== 'way' || !name || !e.geometry || e.geometry.length < 2) continue;
+    if (!byName.has(name)) byName.set(name, []);
+    byName.get(name)!.push(e.geometry.map((g) => ({ lat: g.lat, lon: g.lon })));
+  }
+  const streets = [...byName.entries()].map(([name, ways]) => ({ name, ways })).sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+  await kvSet(`streets:${insee}`, { at: Date.now(), streets });
+  return streets;
+}
+
+export async function cachedCommuneStreets(insee: string): Promise<{ at: number; streets: NamedStreet[] } | undefined> {
+  return kvGet(`streets:${insee}`);
+}

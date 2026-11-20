@@ -13,6 +13,19 @@ export interface AppConfig {
   };
   panoramax: { instance: string };
   overpass: string[];
+  /** Campagne « Adoptez une rue » : formulaire d'inscription (Google Forms) et compteurs publics par rue. */
+  campaign: {
+    /** Adresse du formulaire (…/viewform). Vide : la campagne n'affiche que l'avancement. */
+    formUrl: string;
+    /** Identifiant du champ « rue » du formulaire (entry.123456) pour pré-remplir la rue choisie. */
+    streetEntry: string;
+    /** Adresse JSON publique (Apps Script) renvoyant le nombre d'inscrits par rue, sans donnée personnelle. */
+    statsUrl: string;
+    /** Page d'information RGPD de la commune (facultatif : sinon le texte intégré est utilisé). */
+    privacyUrl: string;
+    /** Contact pour exercer ses droits. */
+    contactEmail: string;
+  };
 }
 
 const DEFAULTS: AppConfig = {
@@ -28,6 +41,7 @@ const DEFAULTS: AppConfig = {
     channelDrainTagging: 'way',
   },
   panoramax: { instance: 'https://panoramax.openstreetmap.fr' },
+  campaign: { formUrl: '', streetEntry: '', statsUrl: '', privacyUrl: '', contactEmail: '' },
   overpass: ['https://overpass-api.de/api/interpreter', 'https://overpass.private.coffee/api/interpreter'],
 };
 
@@ -59,6 +73,13 @@ export function sanitizeConfig(cfg: AppConfig): AppConfig {
     openstreetmap: { ...cfg.openstreetmap, channelDrainTagging: channel as AppConfig['openstreetmap']['channelDrainTagging'] },
     panoramax: { instance: https(cfg.panoramax?.instance) ? cfg.panoramax.instance : DEFAULTS.panoramax.instance },
     overpass: overpass.length ? overpass : DEFAULTS.overpass,
+    campaign: {
+      formUrl: https(cfg.campaign?.formUrl) ? cfg.campaign.formUrl : '',
+      streetEntry: /^entry\.\d{3,}$/.test(cfg.campaign?.streetEntry || '') ? cfg.campaign.streetEntry : '',
+      statsUrl: https(cfg.campaign?.statsUrl) ? cfg.campaign.statsUrl : '',
+      privacyUrl: https(cfg.campaign?.privacyUrl) ? cfg.campaign.privacyUrl : '',
+      contactEmail: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cfg.campaign?.contactEmail || '') ? cfg.campaign.contactEmail : '',
+    },
   };
 }
 
