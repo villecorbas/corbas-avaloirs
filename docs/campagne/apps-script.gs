@@ -1,9 +1,9 @@
 /**
- * Campagne « Adoptez une rue » : script Google Apps Script à coller dans le classeur Google Sheets
+ * Campagne « Mes rues à relever » : script Google Apps Script à coller dans le classeur Google Sheets
  * lié au formulaire (Extensions > Apps Script). Mode d'emploi complet : docs/campagne-rues.md
  *
  * Ce que fait ce script :
- *  1. creerFormulaire()  : crée le formulaire (rue en liste déroulante, consentement obligatoire) et son classeur.
+ *  1. creerFormulaire()  : crée le formulaire (rues à cocher, une ou plusieurs ; consentement obligatoire) et son classeur.
  *  2. doGet()            : publie UNIQUEMENT le nombre d'inscrits par rue (aucune donnée personnelle).
  *  3. relancer()         : e-mail de rappel aux inscrits dont la rue n'avance pas (avec lien d'opposition).
  *  4. purger()           : efface les inscriptions plus anciennes que la durée de conservation.
@@ -29,12 +29,13 @@ var CONFIG = {
 // ---------------------------------------------------------------------
 
 // Colonnes du classeur de réponses (ordre créé par creerFormulaire).
-var COL = { HORODATAGE: 1, PRENOM: 2, EMAIL: 3, RUE: 4, CONSENTEMENT: 5, STATUT: 6, RELANCES: 7, DERNIERE_RELANCE: 8 };
+var COL = { HORODATAGE: 1, PRENOM: 2, EMAIL: 3, RUE: 4, // colonne « Rues » : une ou plusieurs rues
+   CONSENTEMENT: 5, STATUT: 6, RELANCES: 7, DERNIERE_RELANCE: 8 };
 
 /** 1. Crée le formulaire. À lancer une seule fois. */
 function creerFormulaire() {
   var rues = ruesDeLaCommune_();
-  var form = FormApp.create('Adoptez une rue à ' + CONFIG.COMMUNE_NOM + ' — Chasse aux avaloirs');
+  var form = FormApp.create('Mes rues à relever à ' + CONFIG.COMMUNE_NOM + ' — Chasse aux avaloirs');
   form.setDescription(
     'Je m’engage à relever les avaloirs d’une rue de ' + CONFIG.COMMUNE_NOM + ' avec l’application « Chasse aux avaloirs » ' +
     'pour lutter contre le moustique tigre. Plusieurs personnes peuvent choisir la même rue.\n\n' +
@@ -52,12 +53,12 @@ function creerFormulaire() {
   form.addTextItem().setTitle('Adresse e-mail').setHelpText('Utilisée uniquement pour confirmer votre inscription et vous envoyer un rappel si besoin.')
     .setRequired(true)
     .setValidation(FormApp.createTextValidation().requireTextMatchesPattern('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$').setHelpText('Adresse e-mail invalide').build());
-  form.addListItem().setTitle('Rue').setChoiceValues(rues).setRequired(true);
+  form.addCheckboxItem().setTitle('Rues').setHelpText('Vous pouvez en choisir plusieurs.').setChoiceValues(rues).setRequired(true);
   form.addCheckboxItem().setTitle('Consentement')
     .setChoiceValues(['J’accepte que la commune de ' + CONFIG.COMMUNE_NOM + ' enregistre ces informations et m’envoie un rappel par e-mail si ma rue n’avance pas.'])
     .setRequired(true);
 
-  var ss = SpreadsheetApp.create('Adoptez une rue — réponses (données personnelles)');
+  var ss = SpreadsheetApp.create('Mes rues à relever — réponses (données personnelles)');
   form.setDestination(FormApp.DestinationType.SPREADSHEET, ss.getId());
   Logger.log('Formulaire : ' + form.getEditUrl());
   Logger.log('Adresse à publier (champ formUrl) : ' + form.getPublishedUrl());
@@ -65,17 +66,26 @@ function creerFormulaire() {
   Logger.log('Ensuite : renommer l’onglet de réponses en « ' + CONFIG.FEUILLE_REPONSES + ' », ajouter les colonnes F:H (Statut, Relances, Dernière relance), créer l’onglet « ' + CONFIG.FEUILLE_AVANCEMENT + ' ». Voir docs/campagne-rues.md.');
 }
 
-/** Noms de rues de la commune (OpenStreetMap), triés, sans doublon. */
+/** Voies de la commune d'après la Base Adresse Nationale (référentiel de l'État, open data), triées, sans doublon. */
 function ruesDeLaCommune_() {
-  var q = '[out:json][timeout:60];area["ref:INSEE"="' + CONFIG.COMMUNE_INSEE + '"]["boundary"="administrative"]->.a;' +
-          'way["highway"~"^(primary|secondary|tertiary|unclassified|residential|living_street|pedestrian)$"]["name"](area.a);out tags;';
-  var res = UrlFetchApp.fetch('https://overpass-api.de/api/interpreter', { method: 'post', payload: { data: q }, muteHttpExceptions: true });
-  if (res.getResponseCode() !== 200) throw new Error('Overpass indisponible (' + res.getResponseCode() + '), réessayez dans quelques minutes.');
+  var res = UrlFetchApp.fetch('https://plateforme.adresse.data.gouv.fr/lookup/' + CONFIG.COMMUNE_INSEE, { muteHttpExceptions: true });
+  if (res.getResponseCode() !== 200) throw new Error('Base Adresse Nationale indisponible (' + res.getResponseCode() + '), réessayez dans quelques minutes.');
   var seen = {};
-  JSON.parse(res.getContentText()).elements.forEach(function (e) { if (e.tags && e.tags.name) seen[e.tags.name.trim()] = true; });
+  (JSON.parse(res.getContentText()).voies || []).forEach(function (v) {
+    if (v.type === 'voie' && v.nomVoie) seen[String(v.nomVoie).replace(/\s+/g, ' ').trim()] = true;
+  });
   var list = Object.keys(seen).sort(function (a, b) { return a.localeCompare(b, 'fr'); });
-  list.push('Autre rue (je précise par e-mail à la mairie)');
+  if (!list.length) throw new Error('Aucune voie trouvée pour le code INSEE ' + CONFIG.COMMUNE_INSEE);
   return list;
+}
+
+/** Rues choisies par une personne : la cellule contient « Rue A, Rue B » (cases cochées, séparées par une virgule). */
+function ruesDe_(cellule, connues) {
+  var texte = String(cellule || '');
+  var trouvees = [];
+  Object.keys(connues).forEach(function (nom) { if (texte.indexOf(nom) !== -1) trouvees.push(nom); });
+  // « Rue de la Gare » est contenu dans « Rue de la Gare Nord » : on ne garde que les noms les plus longs
+  return trouvees.filter(function (n) { return !trouvees.some(function (m) { return m !== n && m.indexOf(n) !== -1 && texte.indexOf(m) !== -1; }); });
 }
 
 /** Clé de comparaison identique à celle de l'application (sans accents, minuscules, ponctuation). */
@@ -90,13 +100,27 @@ function lignes_() {
   return { sh: sh, rows: n > 0 ? sh.getRange(2, 1, n, 8).getValues() : [] };
 }
 
+/** Voies connues (BAN), en cache 6 h pour ne pas interroger le service à chaque appel. */
+function ruesConnues_() {
+  var cache = CacheService.getScriptCache();
+  var brut = cache.get('rues');
+  var liste = brut ? JSON.parse(brut) : ruesDeLaCommune_();
+  if (!brut) cache.put('rues', JSON.stringify(liste), 21600);
+  var out = {};
+  liste.forEach(function (n) { out[n] = true; });
+  return out;
+}
+
 /** 2. Application web (déployer en « Application Web », accès : tout le monde). Aucune donnée personnelle. */
 function doGet() {
   var counts = {};
+  var connues = ruesConnues_();
   lignes_().rows.forEach(function (r) {
     if (!r[COL.EMAIL - 1] || r[COL.STATUT - 1] === 'Désinscrit') return;
-    var k = cle_(r[COL.RUE - 1]);
-    if (k) counts[k] = (counts[k] || 0) + 1;
+    ruesDe_(r[COL.RUE - 1], connues).forEach(function (nom) {
+      var k = cle_(nom);
+      counts[k] = (counts[k] || 0) + 1; // une personne compte une fois par rue choisie
+    });
   });
   return ContentService.createTextOutput(JSON.stringify({ counts: counts })).setMimeType(ContentService.MimeType.JSON);
 }
@@ -106,7 +130,7 @@ function avancement_() {
   var sh = SpreadsheetApp.getActive().getSheetByName(CONFIG.FEUILLE_AVANCEMENT);
   var map = {};
   if (!sh || sh.getLastRow() < 2) return map;
-  sh.getRange(2, 1, sh.getLastRow() - 1, 2).getValues().forEach(function (r) { map[cle_(r[0])] = Number(r[1]) || 0; });
+  sh.getRange(2, 1, sh.getLastRow() - 1, 2).getValues().forEach(function (r) { if (r[0] !== '' && r[1] !== '') map[cle_(r[0])] = Number(r[1]) || 0; });
   return map;
 }
 
@@ -114,6 +138,7 @@ function avancement_() {
 function relancer(essai) {
   var av = avancement_();
   if (!Object.keys(av).length) throw new Error('Onglet « ' + CONFIG.FEUILLE_AVANCEMENT + ' » vide : collez d’abord l’export CSV de l’application.');
+  var connues = ruesConnues_();
   var now = new Date();
   var jour = 86400000;
   var envoyes = 0;
@@ -122,21 +147,26 @@ function relancer(essai) {
     var email = r[COL.EMAIL - 1], statut = r[COL.STATUT - 1], nb = Number(r[COL.RELANCES - 1]) || 0, derniere = r[COL.DERNIERE_RELANCE - 1];
     if (!email || statut === 'Désinscrit' || nb >= CONFIG.RELANCES_MAX) return;
     if (!r[COL.CONSENTEMENT - 1]) return; // pas de consentement enregistré : pas de relance
-    var pct = av[cle_(r[COL.RUE - 1])];
-    if (pct === undefined || pct >= CONFIG.SEUIL_RELANCE_PCT) return; // rue inconnue ou déjà faite
+    // Rues choisies qui n'avancent pas (avancement connu et sous le seuil)
+    var enRetard = ruesDe_(r[COL.RUE - 1], connues).filter(function (nom) {
+      var pct = av[cle_(nom)];
+      return pct !== undefined && pct < CONFIG.SEUIL_RELANCE_PCT;
+    });
+    if (!enRetard.length) return;
     var depuis = derniere ? derniere : r[COL.HORODATAGE - 1];
     var delai = derniere ? CONFIG.JOURS_ENTRE_RELANCES : CONFIG.JOURS_AVANT_PREMIERE_RELANCE;
     if (now - new Date(depuis) < delai * jour) return;
     if (!essai) {
+      var detail = enRetard.map(function (nom) { return '• ' + nom + ' : ' + av[cle_(nom)] + ' % relevé'; }).join('\n');
       MailApp.sendEmail({
         to: email,
         replyTo: CONFIG.CONTACT_MAIRIE,
-        subject: 'Votre rue vous attend : ' + r[COL.RUE - 1] + ' (' + CONFIG.COMMUNE_NOM + ')',
+        subject: (enRetard.length > 1 ? 'Vos rues vous attendent' : 'Votre rue vous attend') + ' (' + CONFIG.COMMUNE_NOM + ')',
         body: 'Bonjour ' + r[COL.PRENOM - 1] + ',\n\n' +
-              'Vous vous êtes engagé(e) à relever les avaloirs de « ' + r[COL.RUE - 1] + ' » pour lutter contre le moustique tigre. ' +
-              'Pour l’instant, cette rue est couverte à ' + pct + ' %. Quelques minutes suffisent :\n' + CONFIG.APP_URL + '\n\n' +
+              'Vous vous êtes engagé(e) à relever les avaloirs de ' + (enRetard.length > 1 ? 'ces rues' : 'cette rue') + ' pour lutter contre le moustique tigre :\n' +
+              detail + '\n\nQuelques minutes suffisent :\n' + CONFIG.APP_URL + '\n\n' +
               'Merci pour votre aide !\n' + 'La mairie de ' + CONFIG.COMMUNE_NOM + '\n\n' +
-              '—\nVous recevez ce message parce que vous vous êtes inscrit(e) à la campagne « Adoptez une rue ». ' +
+              '—\nVous recevez ce message parce que vous vous êtes inscrit(e) à la campagne « Mes rues à relever ». ' +
               'Pour ne plus recevoir de rappel ou faire effacer vos données, répondez simplement « STOP » à ce message ou écrivez à ' + CONFIG.CONTACT_MAIRIE + '.'
       });
       data.sh.getRange(i + 2, COL.RELANCES).setValue(nb + 1);

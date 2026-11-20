@@ -184,7 +184,7 @@ export interface NamedStreet {
   ways: LatLon[][];
 }
 
-/** Toutes les rues nommées de la commune (pour la campagne « Adoptez une rue »). */
+/** Toutes les rues nommées de la commune (avancement des rues de la campagne « Mes rues à relever »). */
 export async function fetchCommuneStreets(insee: string): Promise<NamedStreet[]> {
   const q = `[out:json][timeout:60];
 area["ref:INSEE"="${insee.replace(/[^0-9AB]/gi, '')}"]["boundary"="administrative"]->.a;

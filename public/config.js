@@ -51,7 +51,7 @@ window.AVALOIRS_CONFIG = {
     'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
   ],
 
-  // Campagne « Adoptez une rue » (voir docs/campagne-rues.md). Laisser vide tant que le formulaire n'est pas créé.
+  // Campagne « Mes rues à relever » (voir docs/campagne-rues.md). Laisser vide tant que le formulaire n'est pas créé.
   campaign: {
     formUrl: '',      // adresse publiée du formulaire Google : https://docs.google.com/forms/d/e/…/viewform
     streetEntry: '',  // identifiant du champ « Rue » pour la pré-remplir : entry.123456789

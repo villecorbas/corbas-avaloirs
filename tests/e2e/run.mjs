@@ -41,7 +41,21 @@ async function installMocks(context) {
       contentType: 'application/javascript',
       body: `window.AVALOIRS_CONFIG = { campaignName: 'Chasse aux avaloirs', commune: { estimatedDrains: 400 }, dailyGoal: 5,
         openstreetmap: { environment: 'production', clientId: 'e2e-client', hashtags: ['#avaloirs', '#moustiquetigre'] },
-        panoramax: { instance: 'https://panoramax.openstreetmap.fr' }, overpass: ['https://overpass-api.de/api/interpreter'] };`,
+        panoramax: { instance: 'https://panoramax.openstreetmap.fr' }, overpass: ['https://overpass-api.de/api/interpreter'],
+        campaign: { formUrl: 'https://docs.google.com/forms/d/e/TEST/viewform', streetEntry: 'entry.123456', contactEmail: 'mairie@example.org' } };`,
+    }),
+  );
+  // Base Adresse Nationale : liste officielle des voies de la commune.
+  await context.route('https://plateforme.adresse.data.gouv.fr/lookup/**', (route) =>
+    route.fulfill({
+      contentType: 'application/json',
+      headers: { 'access-control-allow-origin': '*' },
+      body: JSON.stringify({ voies: [
+        { type: 'voie', nomVoie: 'Rue du Père Chevrier', nbNumeros: 20 },
+        { type: 'voie', nomVoie: 'Chemin des Vignes', nbNumeros: 8 },
+        { type: 'voie', nomVoie: 'Impasse des Lilas', nbNumeros: 3 },
+        { type: 'lieu-dit', nomVoie: 'Lieudit Montmartin' },
+      ] }),
     }),
   );
   await context.route('https://overpass-api.de/**', async (route) => {
@@ -617,16 +631,24 @@ async function main() {
     check(state.osmChanges.filter((x) => x.includes('<delete')).length === 1, 'Suppression : l’avaloir existant d’un autre contributeur n’est jamais supprimé');
     check(state.pnxDeleted?.length === 2, 'Suppression : sa photo est retirée de Panoramax');
 
-    // 13 ter. Campagne « Adoptez une rue » : liste des rues, recherche, inscription pré-remplie
+    // 13 ter. Campagne « Mes rues à relever » : liste des rues, recherche, inscription pré-remplie
     await page.getByRole('button', { name: 'Défis' }).click();
-    await page.getByRole('button', { name: /Adoptez une rue/ }).click();
+    await page.getByRole('button', { name: /Mes rues à relever/ }).click();
     await page.getByText('Rue du Père Chevrier').waitFor({ timeout: 10000 });
     await wait(500);
+    check(await page.getByText('Chemin des Vignes').isVisible(), 'Campagne : toutes les rues de la liste officielle (BAN) sont affichées');
+    check(!(await page.getByText('Lieudit Montmartin').isVisible().catch(() => false)), 'Campagne : les lieux-dits sont écartés');
+    check(await page.getByText('Avancement inconnu').isVisible(), 'Campagne : une rue sans tracé OSM reste listée, avancement inconnu');
+    // Plusieurs rues : sélection, puis un seul bouton d’inscription avec les rues pré-remplies
+    await page.getByRole('button', { name: 'Je la prends' }).nth(0).click();
+    await page.getByRole('button', { name: 'Je la prends' }).nth(0).click();
+    const join = page.getByRole('link', { name: /Je m’engage pour 2 rues/ });
+    await join.waitFor();
+    const href = new URL(await join.getAttribute('href'));
+    check(href.searchParams.getAll('entry.123456').length === 2 && href.searchParams.get('usp') === 'pp_url', 'Campagne : plusieurs rues choisies, formulaire pré-rempli avec chacune');
     await shot('40-campagne-rues');
-    check(await page.getByText('Chemin des Vignes').isVisible(), 'Campagne : toutes les rues de la commune sont listées');
     await page.getByRole('searchbox', { name: 'Chercher ma rue' }).fill('vignes');
     check(!(await page.getByText('Rue du Père Chevrier').isVisible().catch(() => false)), 'Campagne : la recherche filtre sans tenir compte des accents ni de la casse');
-    check(await page.getByText(/Les inscriptions ouvriront très bientôt/).isVisible(), 'Campagne : sans formulaire configuré, message d’attente (pas de bouton d’inscription)');
     await page.getByRole('button', { name: /Protection de vos données/ }).click();
     check(await page.getByText(/responsable du traitement/).isVisible(), 'Campagne : notice RGPD affichée');
     await page.getByRole('dialog').last().getByRole('button', { name: 'Fermer' }).click();

@@ -533,8 +533,11 @@ const en: Dict = {
   },
 
   campaign: {
-    title: 'Adopt a street',
-    intro: 'Pick a street in Corbas and commit to mapping its storm drains. Several people can sign up for the same street: it goes faster together!',
+    unknown: 'Progress unknown',
+    chosen: 'Picked',
+    choose: 'I’ll take it',
+    title: 'My streets to cover',
+    intro: 'Pick one or more streets in Corbas and commit to mapping their storm drains. Several people can pick the same street: it goes faster together!',
     summary: '{done} streets finished out of {total}',
     search: 'Find my street',
     filter: 'Filter streets',
@@ -548,7 +551,7 @@ const en: Dict = {
     done: 'Finished',
     volunteers: { one: '{count} volunteer', other: '{count} volunteers' },
     nobody: 'Nobody signed up yet',
-    join: 'I’m in',
+    join: { one: 'Sign me up for {count} street', other: 'Sign me up for {count} streets' },
     more: { one: 'Show {count} more street', other: 'Show {count} more streets' },
     soon: 'Sign-ups open very soon. In the meantime you can already map the drains on your street!',
     privacyLink: 'Your data protection',
@@ -561,8 +564,8 @@ const en: Dict = {
     privacyRights: 'Your rights: access, rectification, erasure, objection. Just write to the town hall; every e-mail also has a link to stop reminders. You may also contact the CNIL.',
     privacyPublic: 'What you map in the app (drain positions and photos) is published on OpenStreetMap and Panoramax: it is public and independent of this sign-up.',
     privacyFull: 'Read the full policy',
-    card: 'Adopt a street',
-    cardText: 'Commit to mapping the drains of a street in Corbas.',
+    card: 'My streets to cover',
+    cardText: 'Choose the streets of Corbas whose drains you will map.',
   },
 
   inviteCard: {

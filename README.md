@@ -276,6 +276,6 @@ Structure : `src/lib/` (métier : `taxonomy.ts`, `osm.ts`, `panoramax.ts`, `sync
 - **Alerte de doublon :** pendant le positionnement, un bandeau orange prévient en direct dès qu'un avaloir déjà cartographié se trouve à moins de 8 m. À la validation, une feuille propose « C'est le même : ajouter ma photo » ou « C'est un autre ». La détection s'appuie sur toute la commune, pas seulement sur un rayon de 450 m, et fonctionne avec le cache hors ligne.
 - **Rappels d'invitation par paliers :** après le 2e avaloir (si personne n'a encore été invité), puis aux 5e, 10e, 20e, 40e et 80e, la carte « Inviter mes voisins » s'affiche une seule fois par palier sur l'écran de réussite, tant qu'il reste des points d'invitation à gagner.
 
-## Campagne « Adoptez une rue »
+## Campagne « Mes rues à relever »
 
 Écran d'inscription par rue (avancement, formulaire Google pré-rempli, relances par e-mail, notice RGPD) : voir [docs/campagne-rues.md](docs/campagne-rues.md). Le lien `…/?rues` ouvre directement l'écran.

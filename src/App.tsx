@@ -112,7 +112,7 @@ export function App() {
   // Rappel « travail non envoyé » (au plus toutes les 12 h) pour les contributeurs sans compte.
   const [nudge, setNudge] = useState(false);
   const [social, setSocial] = useState<'invite' | 'share' | 'campaign' | null>(null);
-  // Lien de campagne (?rues) : ouvre « Adoptez une rue » une fois l'accueil passé.
+  // Lien de campagne (?rues) : ouvre « Mes rues à relever » une fois l'accueil passé.
   useEffect(() => {
     if (onboarded && !capturing && consumeCampaignLink()) setSocial('campaign');
   }, [onboarded, capturing]);

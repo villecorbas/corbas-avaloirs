@@ -533,8 +533,11 @@ const fr: Dict = {
   },
 
   campaign: {
-    title: 'Adoptez une rue',
-    intro: 'Choisissez une rue de Corbas et engagez-vous à relever ses avaloirs. Plusieurs personnes peuvent s’inscrire pour la même rue : à plusieurs, c’est plus vite fait !',
+    unknown: 'Avancement inconnu',
+    chosen: 'Choisie',
+    choose: 'Je la prends',
+    title: 'Mes rues à relever',
+    intro: 'Choisissez une ou plusieurs rues de Corbas et engagez-vous à relever leurs avaloirs. Plusieurs personnes peuvent choisir la même rue : à plusieurs, c’est plus vite fait !',
     summary: '{done} rues terminées sur {total}',
     search: 'Chercher ma rue',
     filter: 'Filtrer les rues',
@@ -548,7 +551,7 @@ const fr: Dict = {
     done: 'Terminée',
     volunteers: { one: '{count} inscrit', other: '{count} inscrits' },
     nobody: 'Personne d’inscrit pour l’instant',
-    join: 'Je m’engage',
+    join: { one: 'Je m’engage pour {count} rue', other: 'Je m’engage pour {count} rues' },
     more: { one: 'Voir {count} rue de plus', other: 'Voir {count} rues de plus' },
     soon: 'Les inscriptions ouvriront très bientôt. En attendant, vous pouvez déjà relever les avaloirs de votre rue !',
     privacyLink: 'Protection de vos données',
@@ -561,8 +564,8 @@ const fr: Dict = {
     privacyRights: 'Vos droits : accès, rectification, effacement, opposition. Il suffit d’écrire à la mairie ; chaque e-mail contient aussi un lien pour ne plus recevoir de rappel. Vous pouvez aussi saisir la CNIL.',
     privacyPublic: 'Ce que vous relevez dans l’application (position et photo d’avaloirs) est publié sur OpenStreetMap et Panoramax : c’est public et indépendant de cette inscription.',
     privacyFull: 'Lire la politique complète',
-    card: 'Adoptez une rue',
-    cardText: 'Engagez-vous à relever les avaloirs d’une rue de Corbas.',
+    card: 'Mes rues à relever',
+    cardText: 'Choisissez les rues de Corbas dont vous relèverez les avaloirs.',
   },
 
   inviteCard: {

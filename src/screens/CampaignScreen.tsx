@@ -5,6 +5,7 @@ import { Icon } from '../components/Icon';
 import { Bar, Segmented, Sheet, Spinner } from '../components/ui';
 import { useCommuneDrains } from '../lib/communeDrains';
 import { download, recordCenter } from '../lib/export';
+import { cachedBanStreets, fetchBanStreets, type BanStreet } from '../lib/ban';
 import { cachedCommuneStreets, fetchCommuneStreets, type NamedStreet } from '../lib/overpass';
 import { formLink, parseCounts, progressCSV, streetsProgress, streetState } from '../lib/streets';
 import { useOnline, useRecords } from '../lib/store';
@@ -13,7 +14,7 @@ import { useCommune } from './ProfileScreen';
 const STALE_MS = 7 * 86_400_000;
 type Filter = 'all' | 'todo' | 'nobody';
 
-/** « Adoptez une rue » : toutes les rues de la commune, leur avancement, et l'inscription pour en cartographier une. */
+/** « Mes rues à relever » : toutes les rues de la commune, leur avancement, et l'inscription pour en cartographier une. */
 export function CampaignScreen({ onClose }: { onClose: () => void }) {
   const cfg = getConfig();
   const commune = useCommune();
@@ -21,7 +22,9 @@ export function CampaignScreen({ onClose }: { onClose: () => void }) {
   const online = useOnline();
   const records = useRecords();
   const communeDrains = useCommuneDrains(insee);
-  const [streets, setStreets] = useState<NamedStreet[] | null>(null);
+  const [official, setOfficial] = useState<BanStreet[] | null>(null);
+  const [osmStreets, setOsmStreets] = useState<NamedStreet[]>([]);
+  const [picked, setPicked] = useState<string[]>([]);
   const [failed, setFailed] = useState(false);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [query, setQuery] = useState('');
@@ -29,24 +32,25 @@ export function CampaignScreen({ onClose }: { onClose: () => void }) {
   const [notice, setNotice] = useState(false);
   const [limit, setLimit] = useState(40);
 
+  // Liste officielle des voies (Base Adresse Nationale) + tracés OpenStreetMap pour mesurer l'avancement.
   useEffect(() => {
     if (!insee) return;
     let alive = true;
-    void cachedCommuneStreets(insee).then(async (c) => {
+    const load = async <T extends { at: number }, R>(cached: () => Promise<T | undefined>, fetchFresh: () => Promise<R>, apply: (c: T) => void, applyFresh: (r: R) => void, required: boolean) => {
+      const c = await cached();
       if (!alive) return;
-      if (c) setStreets(c.streets);
+      if (c) apply(c);
       if ((!c || Date.now() - c.at > STALE_MS) && navigator.onLine !== false) {
         try {
-          const s = await fetchCommuneStreets(insee);
-          if (alive) {
-            setStreets(s);
-            setFailed(false);
-          }
+          const r = await fetchFresh();
+          if (alive) applyFresh(r);
         } catch {
-          if (alive && !c) setFailed(true);
+          if (alive && !c && required) setFailed(true);
         }
       }
-    });
+    };
+    void load(() => cachedBanStreets(insee), () => fetchBanStreets(insee), (c) => setOfficial(c.streets), (r) => { setOfficial(r); setFailed(false); }, true);
+    void load(() => cachedCommuneStreets(insee), () => fetchCommuneStreets(insee), (c) => setOsmStreets(c.streets), (r) => setOsmStreets(r), false);
     return () => {
       alive = false;
     };
@@ -69,8 +73,8 @@ export function CampaignScreen({ onClose }: { onClose: () => void }) {
   }, [cfg.campaign.statsUrl]);
 
   const progress = useMemo(
-    () => (streets ? streetsProgress(streets, [...communeDrains, ...(records || []).map(recordCenter)], counts) : []),
-    [streets, communeDrains, records, counts],
+    () => (official ? streetsProgress(official, osmStreets, [...communeDrains, ...(records || []).map(recordCenter)], counts) : []),
+    [official, osmStreets, communeDrains, records, counts],
   );
   const done = progress.filter((p) => streetState(p) === 'done').length;
   const needle = query
@@ -100,7 +104,7 @@ export function CampaignScreen({ onClose }: { onClose: () => void }) {
           {t('campaign.intro')}
         </p>
 
-        {streets && (
+        {official && (
           <div className="card stack">
             <div className="row footnote">
               <span style={{ fontWeight: 600 }}>{t('campaign.summary', { done, total: progress.length })}</span>
@@ -128,7 +132,7 @@ export function CampaignScreen({ onClose }: { onClose: () => void }) {
           options={(['all', 'todo', 'nobody'] as Filter[]).map((f) => ({ value: f, label: t(`campaign.filter_${f}`) }))}
         />
 
-        {!streets && !failed && (
+        {!official && !failed && (
           <div className="center" style={{ padding: 24 }}>
             <Spinner size={28} />
             <p className="footnote secondary">{t('campaign.loading')}</p>
@@ -140,31 +144,35 @@ export function CampaignScreen({ onClose }: { onClose: () => void }) {
             <span className="footnote">{online ? t('campaign.failed') : t('campaign.offline')}</span>
           </div>
         )}
-        {streets && !shown.length && <p className="subhead secondary center">{t('campaign.none')}</p>}
+        {official && !shown.length && <p className="subhead secondary center">{t('campaign.none')}</p>}
 
         <ul className="street-list">
           {shown.slice(0, limit).map((p) => {
             const state = streetState(p);
-            const href = formLink(cfg.campaign.formUrl, cfg.campaign.streetEntry, p.name);
+            const chosen = picked.includes(p.name);
             return (
-              <li key={p.key} className="card street-row">
+              <li key={p.key} className={`card street-row ${chosen ? 'chosen' : ''}`}>
                 <div className="row" style={{ alignItems: 'baseline' }}>
                   <span className="headline" style={{ flex: 1, minWidth: 0 }}>{p.name}</span>
-                  <span className={`chip ${state === 'done' ? 'green' : ''}`}>{state === 'done' ? `✓ ${t('campaign.done')}` : `${Math.round(p.ratio * 100)} %`}</span>
+                  {state === 'unknown' ? (
+                    <span className="chip">{t('campaign.unknown')}</span>
+                  ) : (
+                    <span className={`chip ${state === 'done' ? 'green' : ''}`}>{state === 'done' ? `✓ ${t('campaign.done')}` : `${Math.round((p.ratio ?? 0) * 100)} %`}</span>
+                  )}
                 </div>
-                <Bar progress={p.ratio} height={6} color={state === 'done' ? 'var(--green)' : 'var(--accent)'} />
+                {p.ratio !== null && <Bar progress={p.ratio} height={6} color={state === 'done' ? 'var(--green)' : 'var(--accent)'} />}
                 <div className="row footnote secondary">
                   <span style={{ flex: 1 }}>
-                    {p.volunteers
-                      ? t('campaign.volunteers', { count: p.volunteers })
-                      : cfg.campaign.statsUrl
-                        ? t('campaign.nobody')
-                        : ''}
+                    {p.volunteers ? t('campaign.volunteers', { count: p.volunteers }) : cfg.campaign.statsUrl ? t('campaign.nobody') : ''}
                   </span>
-                  {state !== 'done' && href && (
-                    <a className="btn small tinted" href={href} target="_blank" rel="noopener noreferrer">
-                      {t('campaign.join')}
-                    </a>
+                  {cfg.campaign.formUrl && state !== 'done' && (
+                    <button
+                      className={`btn small ${chosen ? '' : 'tinted'}`}
+                      aria-pressed={chosen}
+                      onClick={() => setPicked(chosen ? picked.filter((n) => n !== p.name) : [...picked, p.name])}
+                    >
+                      {chosen ? `✓ ${t('campaign.chosen')}` : t('campaign.choose')}
+                    </button>
                   )}
                 </div>
               </li>
@@ -177,11 +185,19 @@ export function CampaignScreen({ onClose }: { onClose: () => void }) {
           </button>
         )}
 
+        {picked.length > 0 && (
+          <div className="sticky-cta">
+            <a className="btn" href={formLink(cfg.campaign.formUrl, cfg.campaign.streetEntry, picked)} target="_blank" rel="noopener noreferrer">
+              {t('campaign.join', { count: picked.length })}
+            </a>
+          </div>
+        )}
+
         {!cfg.campaign.formUrl && <p className="section-footer center">{t('campaign.soon')}</p>}
         <button className="btn plain" onClick={() => setNotice(true)}>
           <Icon name="lock" size={16} /> {t('campaign.privacyLink')}
         </button>
-        {streets && (
+        {official && (
           <button className="btn plain" onClick={() => download('avancement_rues.csv', progressCSV(progress), 'text/csv;charset=utf-8')}>
             <Icon name="download" size={16} /> {t('campaign.exportCsv')}
           </button>

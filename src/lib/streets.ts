@@ -1,5 +1,6 @@
 import { computeCoverage } from './coverage';
 import { distance, type LatLon } from './geo';
+import type { BanStreet } from './ban';
 import type { NamedStreet } from './overpass';
 
 /** Clé de comparaison d'un nom de rue : sans accents, casse, ponctuation ni espaces multiples. */
@@ -16,27 +17,40 @@ export interface StreetProgress {
   name: string;
   key: string;
   lengthM: number;
-  /** Part de la longueur de rue couverte par un avaloir connu (0..1). */
-  ratio: number;
+  /** Part de la longueur de rue couverte par un avaloir connu (0..1) ; null si la rue n'est pas (encore) tracée dans OpenStreetMap. */
+  ratio: number | null;
   /** Nombre d'inscrits (compteur public), si connu. */
   volunteers?: number;
 }
 
-export type StreetState = 'todo' | 'partial' | 'done';
+export type StreetState = 'todo' | 'partial' | 'done' | 'unknown';
 /** À partir de 90 % de couverture, la rue est considérée comme faite. */
 export const DONE_RATIO = 0.9;
 export function streetState(p: Pick<StreetProgress, 'ratio'>): StreetState {
+  if (p.ratio === null) return 'unknown';
   return p.ratio >= DONE_RATIO ? 'done' : p.ratio > 0.05 ? 'partial' : 'todo';
 }
 
-/** Avancement de chaque rue : couverture par les avaloirs connus (OSM + relevés locaux). */
-export function streetsProgress(streets: NamedStreet[], drains: LatLon[], counts: Record<string, number> = {}): StreetProgress[] {
-  return streets.map((s) => {
-    const cov = computeCoverage(s.ways, drains);
+/**
+ * Avancement de chaque rue de la liste officielle (BAN) : la géométrie OpenStreetMap est rapprochée par le nom ;
+ * une rue sans tracé correspondant reste dans la liste, avec un avancement inconnu.
+ */
+export function streetsProgress(official: BanStreet[], osm: NamedStreet[], drains: LatLon[], counts: Record<string, number> = {}): StreetProgress[] {
+  const geometry = new Map<string, LatLon[][]>();
+  for (const s of osm) {
+    const k = streetKey(s.name);
+    geometry.set(k, [...(geometry.get(k) || []), ...s.ways]);
+  }
+  return official.map((o) => {
+    const key = streetKey(o.name);
+    const ways = geometry.get(key);
     let lengthM = 0;
-    for (const w of s.ways) for (let i = 0; i < w.length - 1; i++) lengthM += distance(w[i], w[i + 1]);
-    const key = streetKey(s.name);
-    return { name: s.name, key, lengthM: Math.round(lengthM), ratio: cov.ratio, volunteers: counts[key] };
+    let ratio: number | null = null;
+    if (ways?.length) {
+      ratio = computeCoverage(ways, drains).ratio;
+      for (const w of ways) for (let i = 0; i < w.length - 1; i++) lengthM += distance(w[i], w[i + 1]);
+    }
+    return { name: o.name, key, lengthM: Math.round(lengthM), ratio, volunteers: counts[key] };
   });
 }
 
@@ -51,14 +65,14 @@ export function parseCounts(json: unknown): Record<string, number> {
   return out;
 }
 
-/** Adresse du formulaire avec la rue pré-remplie. */
-export function formLink(formUrl: string, streetEntry: string, street: string): string {
+/** Adresse du formulaire avec les rues choisies pré-remplies (question à cases à cocher : une valeur par rue). */
+export function formLink(formUrl: string, streetEntry: string, streets: string[]): string {
   if (!formUrl) return '';
   try {
     const u = new URL(formUrl);
-    if (streetEntry) {
+    if (streetEntry && streets.length) {
       u.searchParams.set('usp', 'pp_url');
-      u.searchParams.set(streetEntry, street);
+      for (const name of streets) u.searchParams.append(streetEntry, name);
     }
     return u.toString();
   } catch {
@@ -66,8 +80,8 @@ export function formLink(formUrl: string, streetEntry: string, street: string): 
   }
 }
 
-/** CSV d'avancement (rue;couverture_pct;longueur_m) à coller dans l'onglet « Avancement » du classeur de la campagne. */
+/** CSV d'avancement (rue;couverture_pct;longueur_m), rues tracées seulement à coller dans l'onglet « Avancement » du classeur de la campagne. */
 export function progressCSV(rows: StreetProgress[]): string {
   const esc = (v: string) => (/^[=+\-@\t\r]/.test(v) ? `'${v}` : v).replace(/"/g, '""');
-  return ['rue;couverture_pct;longueur_m', ...rows.map((r) => `"${esc(r.name)}";${Math.round(r.ratio * 100)};${r.lengthM}`)].join('\n');
+  return ['rue;couverture_pct;longueur_m', ...rows.filter((r) => r.ratio !== null).map((r) => `"${esc(r.name)}";${Math.round((r.ratio ?? 0) * 100)};${r.lengthM}`)].join('\n');
 }

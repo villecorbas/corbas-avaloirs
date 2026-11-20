@@ -13,7 +13,7 @@ export interface AppConfig {
   };
   panoramax: { instance: string };
   overpass: string[];
-  /** Campagne « Adoptez une rue » : formulaire d'inscription (Google Forms) et compteurs publics par rue. */
+  /** Campagne « Mes rues à relever » : formulaire d'inscription (Google Forms) et compteurs publics par rue. */
   campaign: {
     /** Adresse du formulaire (…/viewform). Vide : la campagne n'affiche que l'avancement. */
     formUrl: string;
