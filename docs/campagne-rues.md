@@ -14,7 +14,7 @@ Objectif : inciter les habitants à relever les avaloirs d'une ou plusieurs rues
 
 - Après l'accueil (4 pages), un écran **« Quelle est votre rue ? »** propose de choisir sa rue (recherche par nom) : **+5 points par rue** (jusqu'à 3 rues) et le badge **« Voisin engagé »**. Il est facultatif (« Plus tard »).
 - Si la personne l'a ignoré, une carte « Et si vous releviez toute votre rue ? » revient sur l'écran de félicitations après le **1er et le 3e avaloir**.
-- Seuls les nouveaux utilisateurs et ceux qui n'ont pas encore vu l'étape la rencontrent ; elle n'apparaît qu'une fois.
+- L'étape n'apparaît qu'à la fin de l'accueil (donc après les explications sur les objectifs), une seule fois, et jamais seule au lancement d'une appli déjà utilisée (ces personnes reçoivent les cartes de rappel après leurs avaloirs).
 
 ## Communication sur les réseaux
 

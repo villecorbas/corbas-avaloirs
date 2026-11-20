@@ -535,7 +535,7 @@ const fr: Dict = {
 
   campaign: {
     firstTitle: 'Quelle est votre rue ?',
-    firstIntro: 'Votre première mission : choisissez votre rue, ou une rue que vous connaissez, et engagez-vous à relever ses avaloirs.',
+    firstIntro: 'Pour freiner le moustique tigre, il faut recenser tous les avaloirs de la commune. Votre première mission : choisissez votre rue, ou une rue que vous connaissez, et engagez-vous à relever ses avaloirs.',
     reward: 'Gagnez +{points} pts par rue choisie (jusqu’à {max} rues) et le badge « Voisin engagé ».',
     earned: 'Engagement pris : +{points} pts',
     typeHint: 'Tapez le nom de votre rue pour la trouver.',

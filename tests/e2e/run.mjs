@@ -302,7 +302,11 @@ async function main() {
     check(true, 'Première utilisation : choix d’une rue, +5 pts annoncés');
     await shot('00-premiere-rue');
     await page.getByRole('button', { name: 'Continuer' }).click();
+    // Appli déjà utilisée (accueil passé) : l’étape « votre rue » n’apparaît jamais seule au lancement
+    await page.evaluate(() => localStorage.removeItem('avaloirs.pledgeSeen'));
+    await page.reload();
     await page.getByText('Installer l’application').waitFor();
+    check(!(await page.getByText('Quelle est votre rue ?').isVisible().catch(() => false)), 'Tunnel : l’engagement n’apparaît qu’à la fin de l’accueil, pas au lancement d’une appli déjà utilisée');
     await wait(600);
     await shot('05-installation');
     check(await page.getByText('Sur l’écran d’accueil').isVisible(), 'Guide d’installation iOS affiché');

@@ -50,15 +50,16 @@ export function App() {
   const [tab, setTab] = useState<Tab>('map');
   const [capturing, setCapturing] = useState(false);
   const [onboarded, setOnboarded] = useState(() => readFlag(ONBOARDED_KEY));
-  // Tunnel du premier lancement : accueil, puis « Quelle est votre rue ? » (engagement, ignorable).
-  const [pledgeSeen, setPledgeSeen] = useState(() => readFlag(PLEDGE_KEY));
+  // Tunnel du premier lancement : accueil (objectifs), PUIS « Quelle est votre rue ? » (engagement, ignorable).
+  // L'étape n'apparaît qu'à la fin de l'accueil, jamais seule au lancement d'une appli déjà utilisée.
+  const [pledgePending, setPledgePending] = useState(false);
   const finishPledge = () => {
     try {
       localStorage.setItem(PLEDGE_KEY, '1');
     } catch {
       /* ignore */
     }
-    setPledgeSeen(true);
+    setPledgePending(false);
   };
   const [install, setInstall] = useState(false);
   const [orphanCode, setOrphanCode] = useState<string | null>(null);
@@ -84,6 +85,7 @@ export function App() {
       /* ignore */
     }
     setOnboarded(true);
+    if (getConfig().commune.insee && !readFlag(PLEDGE_KEY)) setPledgePending(true);
   };
 
   /**
@@ -175,7 +177,7 @@ export function App() {
 
   if (orphanCode) return <OrphanCode code={orphanCode} onClose={() => setOrphanCode(null)} />;
   if (!onboarded) return <Onboarding onDone={finishOnboarding} />;
-  if (!pledgeSeen && getConfig().commune.insee)
+  if (pledgePending)
     return (
       <>
         <CampaignScreen first onClose={finishPledge} />

@@ -535,7 +535,7 @@ const en: Dict = {
 
   campaign: {
     firstTitle: 'What’s your street?',
-    firstIntro: 'Your first mission: pick your street, or one you know, and commit to mapping its storm drains.',
+    firstIntro: 'To curb the tiger mosquito, every storm drain in town has to be mapped. Your first mission: pick your street, or one you know, and commit to mapping its storm drains.',
     reward: 'Earn +{points} pts per street (up to {max} streets) and the “Committed neighbour” badge.',
     earned: 'Commitment made: +{points} pts',
     typeHint: 'Type your street name to find it.',
